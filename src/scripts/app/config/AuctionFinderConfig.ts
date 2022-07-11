@@ -1,4 +1,5 @@
 export default class AuctionFinderConfig {
+    static init = this.initialize();
     static budget = 1000000;
     static buyoutMax = 1;
     static acceptRawAuctions = true;
@@ -44,7 +45,7 @@ export default class AuctionFinderConfig {
     static loreOverrideTable;
     static nameValueTable;
     static nameOverrideTable;
-    static initValueTables() {
+    static initialize() {
         let m = 1000000;
         let k = 1000;
         this.petLoreValueTable = {"Minos Relic": 30*m, "Dwarf Turtle Shelmet": 2*m};
@@ -59,8 +60,9 @@ export default class AuctionFinderConfig {
         this.nameValueTable = {"Withered": 2.1*m, "Ancient": 600*k, "Necrotic": 300*k};
 
         //not really sure if these have a purpose but they're here just in case
-        this.loreOverrideTable = {} //{"Growth VI": 0, "Protection VI":0};
+        this.loreOverrideTable = {}; //{"Growth VI": 0, "Protection VI":0};
         this.nameOverrideTable = {};
+        return 0;
     }   
     static auctionConsiderationTime = 5*60; //seconds
 }

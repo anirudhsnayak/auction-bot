@@ -25,6 +25,7 @@ export default class AuctionFinder {
     }
     static findAuctionsImpl(auctions) {
         this.flips = [];
+        this.bestAuctions = [];
         let petAuctions = auctions.petAuctions;
         let commodityAuctions = auctions.commodityAuctions;
         let talismanAuctions = auctions.talismanAuctions;
@@ -68,7 +69,7 @@ export default class AuctionFinder {
     }
     static findFlips(filteredAuctions){
         let maxValue = -1;
-        console.log(filteredAuctions);
+        //console.log(filteredAuctions);
         let auctionSort = filteredAuctions.sort((a, b) => {return a.auctionCost - b.auctionCost;});
         for(let i = 0; i < auctionSort.length; i++){
             let buyoutCount = AuctionFinderConfig.buyoutMax;

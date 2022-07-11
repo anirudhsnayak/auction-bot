@@ -3,10 +3,11 @@ import AuctionFinder from "../../scripts/app/AuctionFinder/AuctionFinder";
 
 
 function callback(){
-    console.log("worked!");
+    console.log("Refreshed!");
 }
 
 function queryAuction(){
+    console.log("Refreshing...")
     AuctionFinder.findAuctions(callback);
 }
 </script>
@@ -30,9 +31,7 @@ function queryAuction(){
     }
     .refreshButton:hover{
         background: rgb(21, 128, 163);
-    }
-    .refreshButton:active{
-        transform: translate(-0.1rem, 0.1rem);
+        cursor: pointer;
     }
     .refreshText{ 
         font-family: "Helvetica";

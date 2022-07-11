@@ -7,6 +7,11 @@ export default class AuctionSeparator{
     static otherAuctions = [];
     //TODO: Simplify a lot
     static separateAuctions(auctions){ 
+        this.commodityAuctions = {};
+        this.upgradableAuctions = {};
+        this.talismanAuctions = {};
+        this.petAuctions = {};
+        this.otherAuctions = [];
         for(let auction of auctions){
            let exit = false;
            if(this.checkPet(auction)){

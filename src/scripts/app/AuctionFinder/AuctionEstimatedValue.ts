@@ -3,20 +3,22 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 export default class AuctionEstimatedValue{
     static getPetBaseValue(auctionData, auctionType){
         //TODO: implement
-        return this.getLoreValue(auctionData) + this.getPetLevelValue(auctionData, auctionType);
+        return AuctionEstimatedValue.getLoreValue(auctionData) + 
+        AuctionEstimatedValue.getPetLevelValue(auctionData, auctionType);
     }
     static getUpgradableBaseValue(auctionData, auctionType){
-        return this.getLoreValue(auctionData) + this.getNameValue(auctionData);
+        return AuctionEstimatedValue.getLoreValue(auctionData) + 
+        AuctionEstimatedValue.getNameValue(auctionData);
     }
     static getTalismanBaseValue(auctionData, auctionType){
-        return this.getLoreValue(auctionData);
+        return AuctionEstimatedValue.getLoreValue(auctionData);
     }
     static getCommodityBaseValue(auctionData, auctionType){
         return 0; //what do you expect me to do
     }
     static getLoreValue(auctionData){
         let loreValue = 0; 
-        for(let key of AuctionFinderConfig.loreValueTable){
+        for(let key in AuctionFinderConfig.loreValueTable){
             if(auctionData.item_lore.includes(key)){
                 if(key in AuctionFinderConfig.loreOverrideTable){
                     loreValue += AuctionFinderConfig.loreOverrideTable[key];
@@ -29,7 +31,7 @@ export default class AuctionEstimatedValue{
     }
     static getNameValue(auctionData){
         let nameValue = 0;
-        for(let key of AuctionFinderConfig.nameValueTable){
+        for(let key in AuctionFinderConfig.nameValueTable){
             if(auctionData.item_name.includes(key)){
                 if(key in AuctionFinderConfig.nameOverrideTable){
                     nameValue += AuctionFinderConfig.nameOverrideTable[key];

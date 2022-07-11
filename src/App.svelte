@@ -1,7 +1,7 @@
 <script>
 	import AuctionHeader from "./layouts/app/AuctionHeader.svelte";
 	import AuctionConfig from "./layouts/app/AuctionConfig.svelte";
-	import AuctionMenu from "./layouts/app/AuctionMenu.svelte"
+	import AuctionMenu from "./layouts/page/content/AuctionMenu.svelte";
 </script>
 
 
@@ -10,8 +10,6 @@
 	<AuctionConfig></AuctionConfig>
 	<AuctionMenu></AuctionMenu>
 </div>
-
-<div style="height: 300%"></div>
 
 <style type="text/scss">
 	@import "./styles/pageSetup.scss";

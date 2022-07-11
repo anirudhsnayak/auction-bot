@@ -4,14 +4,15 @@
 <div class = "main">
     <h1 class="title">Skyblock Auction Flipper</h1>
     <div class="intro">Hopefully this doesn't break. Keep in mind that this will download the entire Skyblock
-        Auction House (about 120mb) to your personal device every time you refresh, so if you have a limited data plan, I suggest that you don't use this tool.
+        Auction House (about 50mb) to your personal device every time you refresh, so if you have a limited data plan, I suggest that you don't use this tool. 
+        Due to API limits, refreshing may take up to 1 minute.
     </div>
 </div>
 
 <style type="text/scss">
     .main{
         margin-left: 1rem;
-        
+        margin-top: 0.5rem;
     }
     .intro{
         font-size: 1.5rem;

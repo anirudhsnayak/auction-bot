@@ -110,12 +110,17 @@ export default class AuctionFinder {
                 //buyout finished!
                 if(buyoutCount <= 0){
                     //no more buyouts left, time to calculate how much profit we could make
+                    let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
+                    let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
+                    if(max_profit_ < 0){
+                        break; //we lose money
+                    }
                     if(!currentAuction.auctionData.bin){
                         //AH prices are volatile, we don't want to restrict ourselves
                         this.flips.push({
                             auction: currentAuction,
-                            min_profit: (0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost),
-                            max_profit: (0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost)
+                            min_profit: min_profit_,
+                            max_profit: max_profit_
                         });
                         break;
                     }
@@ -124,8 +129,8 @@ export default class AuctionFinder {
                         maxValue = currentAuction.auctionBaseValue;
                         this.flips.push({
                             auction: currentAuction,
-                            min_profit: (0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost),
-                            max_profit: (0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost)
+                            min_profit: min_profit_,
+                            max_profit: max_profit_
                         });
                         break;
                     } 

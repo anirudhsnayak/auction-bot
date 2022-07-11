@@ -2,6 +2,7 @@
 export default class AuctionFinderConfig {
     static init = this.initialize();
     static maxPageQueries = 100;
+    static maxAuctionDisplayCount = 10;
     static budget = 1000000;
     static buyoutMax = 1;
     static acceptRawAuctions = true;
@@ -33,7 +34,7 @@ export default class AuctionFinderConfig {
                      "Livid Dagger ✪✪✪✪✪", "Flower of Truth ✪✪✪✪✪", "Reaper Mask ✪✪✪✪✪",  
                       "Axe of the Shredded ✪✪✪✪✪",  "Shadow Assassin Chestplate ✪✪✪✪✪", 
                       "Rod of the Sea", "Juju Shortbow ✪✪✪✪✪", "Wand of Atonement", "Vorpal Katana", "Wither Goggles ✪✪✪✪✪",
-                      "Warden Helmet", "Atomsplit Katana"];
+                      "Warden Helmet", "Atomsplit Katana", "Aspect of the End", "Aspect of the Dragons"];
     static petWatchlist = ["!LEGENDARY Baby Yeti", "!EPIC Baby Yeti", "!LEGENDARY Squid", "!LEGENDARY Flying Fish", "!LEGENDARY Lion", "!LEGENDARY Elephant",
                       "!LEGENDARY Tiger", "!LEGENDARY Black Cat", "!EPIC Tiger", "!LEGENDARY Blue Whale"]; //fill in the rest of the pets
     static petRarities = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"];

@@ -5,6 +5,13 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 /*
     This class can be improved in the future.
     It's the core algorithm to find the best flips.
+
+    Potential improvements: (not just in this class)
+    - Account for tier boosts
+    - Upgrade flipping?
+    - Better pet calculation
+    - Master Stars 
+    - etc...
 */
 export default class AuctionFinder {
     static flips = [];
@@ -38,11 +45,10 @@ export default class AuctionFinder {
         for(let auction of auctionListing){
             if(auction.bin){
                 auctions.push({
-                    bin: true,
                     auctionType: auctionTypeParam,
                     auctionData: auction,
                     auctionCost: auction.starting_bid,
-                    auctionBaseValue: valueFunction(auction)
+                    auctionBaseValue: valueFunction(auction, auctionTypeParam)
                 });
                 continue;
             }
@@ -50,11 +56,10 @@ export default class AuctionFinder {
                 let currentUnixTime = new Date().getTime();
                 if(auction.end - currentUnixTime >= AuctionFinderConfig.auctionConsiderationTime){
                     auctions.push({
-                        bin: false,
                         auctionType: auctionTypeParam,
                         auctionData: auction,
                         auctionCost: Math.max(auction.starting_bid, auction.highest_bid_amount),
-                        auctionBaseValue: valueFunction(auction)
+                        auctionBaseValue: valueFunction(auction, auctionTypeParam)
                     });
                 }
             }
@@ -93,6 +98,15 @@ export default class AuctionFinder {
                 //buyout finished!
                 if(buyoutCount <= 0){
                     //no more buyouts left, time to calculate how much profit we could make
+                    if(!currentAuction.auctionData.bin){
+                        //AH prices are volatile, we don't want to restrict ourselves
+                        this.flips.push({
+                            auction: currentAuction,
+                            min_profit: (0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost),
+                            max_profit: (0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost)
+                        });
+                        break;
+                    }
                     if(maxValue < currentAuction.auctionBaseValue){ 
                         //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
                         maxValue = currentAuction.auctionBaseValue;
@@ -100,9 +114,9 @@ export default class AuctionFinder {
                             auction: currentAuction,
                             min_profit: (0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost),
                             max_profit: (0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost)
-                        })
-                    }
-                    break;
+                        });
+                        break;
+                    } 
                 }
             }   
         }

@@ -34,7 +34,7 @@ export default class AuctionFinderConfig {
     static petWatchlist = ["!LEGENDARY Baby Yeti", "!EPIC Baby Yeti", "!LEGENDARY Squid", "!LEGENDARY Flying Fish", "!LEGENDARY Lion", "!LEGENDARY Elephant",
                       "!LEGENDARY Tiger", "!LEGENDARY Black Cat", "!EPIC Tiger", "!LEGENDARY Blue Whale"]; //fill in the rest of the pets
     static petRarities = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"];
-    petMultiplierTable = {"!LEGENDARY Wolf":7, "!LEGENDARY Sheep":3, "!LEGENDARY Blue Whale":24, "!LEGENDARY Dolphin":20, 
+    static petMultiplierTable = {"!LEGENDARY Wolf":7, "!LEGENDARY Sheep":3, "!LEGENDARY Blue Whale":24, "!LEGENDARY Dolphin":20, 
                       "!EPIC Dolphin":9, "!EPIC Tiger":10, "LEGENDARY Tiger": 13, "!LEGENDARY Spider": 34, "!LEGENDARY Tarantula": 19,
                       "!LEGENDARY Elephant": 8, "!MYTHIC Bat":2, "!LEGENDARY Bat":5, "!LEGENDARY Ender Dragon":13, "!LEGENDARY Black Cat": 26,
                       "!LEGENDARY Baby Yeti": 22, "!EPIC Baby Yeti":7, "!LEGENDARY Squid":10, "!LEGENDARY Flying Fish": 18, "!LEGENDARY Lion": 24
@@ -43,6 +43,7 @@ export default class AuctionFinderConfig {
     static loreValueTable;
     static loreOverrideTable;
     static nameValueTable;
+    static nameOverrideTable;
     static initValueTables() {
         let m = 1000000;
         let k = 1000;
@@ -54,8 +55,12 @@ export default class AuctionFinderConfig {
                       "Soul Eater II": 2.7*m, "Soul Eater III": 5.54*m, "Soul Eater IV": 11.4 *m, "Soul Eater V": 21.7*m,
                       "Ultimate Wise I": 100*k, "Ultimate Wise II": 270*k, "Ultimate Wise III": 600*k, 
                       "Ultimate Wise IV": 1.4*m, "Ultimate Wise V": 2.5*m, "§e(+20)": 300*k, "One For All": 8*m};
-        this.loreOverrideTable = {} //{"Growth VI": 0, "Protection VI":0};
+        this.loreValueTable = Object.assign({}, this.loreValueTable, this.petLoreValueTable);
         this.nameValueTable = {"Withered": 2.1*m, "Ancient": 600*k, "Necrotic": 300*k};
+
+        //not really sure if these have a purpose but they're here just in case
+        this.loreOverrideTable = {} //{"Growth VI": 0, "Protection VI":0};
+        this.nameOverrideTable = {};
     }   
     static auctionConsiderationTime = 5*60; //seconds
 }

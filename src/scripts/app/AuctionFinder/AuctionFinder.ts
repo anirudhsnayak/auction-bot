@@ -2,6 +2,10 @@ import AuctionQuery from "./AuctionQuery";
 import AuctionSeparator from "./AuctionSeparator";
 import AuctionEstimatedValue from "./AuctionEstimatedValue";
 import AuctionFinderConfig from "../config/AuctionFinderConfig";
+/*
+    This class can be improved in the future.
+    It's the core algorithm to find the best flips.
+*/
 export default class AuctionFinder {
     static flips = [];
     static bestAuctions = [];
@@ -36,26 +40,29 @@ export default class AuctionFinder {
                 auctions.push({
                     bin: true,
                     auctionType: auctionTypeParam,
-                    uuid: auction.uuid, 
+                    auctionData: auction,
                     auctionCost: auction.starting_bid,
                     auctionBaseValue: valueFunction(auction)
                 });
                 continue;
             }
-            let currentUnixTime = new Date().getTime();
-            if(auction.end - currentUnixTime >= AuctionFinderConfig.auctionConsiderationTime){
-                auctions.push({
-                    bin: false,
-                    auctionType: auctionTypeParam,
-                    uuid: auction.uuid,
-                    auctionCost: Math.max(auction.starting_bid, auction.highest_bid_amount),
-                    auctionBaseValue: valueFunction(auction)
-                });
+            if(AuctionFinderConfig.acceptRawAuctions){
+                let currentUnixTime = new Date().getTime();
+                if(auction.end - currentUnixTime >= AuctionFinderConfig.auctionConsiderationTime){
+                    auctions.push({
+                        bin: false,
+                        auctionType: auctionTypeParam,
+                        auctionData: auction,
+                        auctionCost: Math.max(auction.starting_bid, auction.highest_bid_amount),
+                        auctionBaseValue: valueFunction(auction)
+                    });
+                }
             }
         }
         return auctions;
     }
     static findFlips(filteredAuctions){
+        let maxValue = -1;
         console.log(filteredAuctions);
         let auctionSort = filteredAuctions.sort((a, b) => {return a.auctionCost - b.auctionCost;});
         for(let i = 0; i < auctionSort.length; i++){
@@ -86,13 +93,15 @@ export default class AuctionFinder {
                 //buyout finished!
                 if(buyoutCount <= 0){
                     //no more buyouts left, time to calculate how much profit we could make
-                    this.flips.push(
-                        {
+                    if(maxValue < currentAuction.auctionBaseValue){ 
+                        //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
+                        maxValue = currentAuction.auctionBaseValue;
+                        this.flips.push({
                             auction: currentAuction,
-                            min_profit: (auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost) * 0.99,
-                            max_profit: (auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost) * 0.99
-                        }
-                    )
+                            min_profit: (0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost),
+                            max_profit: (0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost)
+                        })
+                    }
                     break;
                 }
             }   

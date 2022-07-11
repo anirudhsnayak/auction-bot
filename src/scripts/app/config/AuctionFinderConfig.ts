@@ -42,6 +42,7 @@ export default class AuctionFinderConfig {
     static petLoreValueTable;
     static loreValueTable;
     static loreOverrideTable;
+    static nameValueTable;
     static initValueTables() {
         let m = 1000000;
         let k = 1000;
@@ -49,11 +50,12 @@ export default class AuctionFinderConfig {
         this.loreValueTable = {"§k":5*m, "Rejuvenate V":500*k, "Legion I":1*m, "Legion II":2*m, 
                       "Legion III":4*m,"Legion IV":7*m, "Legion V":13*m, "Wisdom I":100*k,
                       "Wisdom II":300*k, "Wisdom III":600*k, "Wisdom IV": 1.5*m, "Wisdom V": 2*m,
-                      "Growth VI": 2.1*m, "Protection VI": 2.1*m, "Protection V":1, "Growth V":1, "Soul Eater I": 1.19*m, 
+                      "Growth VI": 2.1*m, "Protection VI": 2.1*m, "Soul Eater I": 1.19*m, 
                       "Soul Eater II": 2.7*m, "Soul Eater III": 5.54*m, "Soul Eater IV": 11.4 *m, "Soul Eater V": 21.7*m,
                       "Ultimate Wise I": 100*k, "Ultimate Wise II": 270*k, "Ultimate Wise III": 600*k, 
                       "Ultimate Wise IV": 1.4*m, "Ultimate Wise V": 2.5*m, "§e(+20)": 300*k, "One For All": 8*m};
-        this.loreOverrideTable = {"Growth VI": 0, "Protection VI":0} ;
-    }
-    static auctionConsiderationTime = 600;
+        this.loreOverrideTable = {} //{"Growth VI": 0, "Protection VI":0};
+        this.nameValueTable = {"Withered": 2.1*m, "Ancient": 600*k, "Necrotic": 300*k};
+    }   
+    static auctionConsiderationTime = 5*60; //seconds
 }

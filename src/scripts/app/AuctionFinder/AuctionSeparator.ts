@@ -69,7 +69,6 @@ export default class AuctionSeparator{
         }
     }
     static checkPet(auction){
-        console.log(auction);
         return auction.item_name.includes("Lvl");
     }
     /* TODO: make sure to add a check for tier boost/recomb? */

@@ -1,3 +1,5 @@
+import AuctionFinderConfig from "../config/AuctionFinderConfig";
+
 export default class AuctionQuery {
     static timeDelay = 100; //just to be safe :)
     static sleep(ms) {
@@ -8,9 +10,8 @@ export default class AuctionQuery {
         let response = await fetch('https://api.hypixel.net/skyblock/auctions?page=0');
         let data = await response.json();
         let totalPages = data["totalPages"];
-        console.log("Limited totalPages to 1.")
-        totalPages = 1;
-        console.log(totalPages);
+        totalPages = Math.min(totalPages, AuctionFinderConfig.maxPageQueries);
+        console.log("Querying " + totalPages + "pages");
         for(let i = 0; i<totalPages; i++){
             console.log("Loading Page " + (i+1) + " of " + totalPages);
             let response = await fetch('https://api.hypixel.net/skyblock/auctions?page='+String(i))

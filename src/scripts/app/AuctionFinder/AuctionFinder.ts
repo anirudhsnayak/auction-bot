@@ -19,6 +19,8 @@ export default class AuctionFinder {
     static findAuctions(callback) {
         AuctionQuery.updateAuctions().then(combinedAuctions => {
             this.findAuctionsImpl(AuctionSeparator.separateAuctions(combinedAuctions));
+            //sort flips by max profit
+            this.flips.sort((a, b) => {return b.max_profit - a.max_profit;});
             console.log(this.flips);
             callback();
         });

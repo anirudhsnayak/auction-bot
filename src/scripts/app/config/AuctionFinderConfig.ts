@@ -1,5 +1,6 @@
 export default class AuctionFinderConfig {
     static init = this.initialize();
+    static maxPageQueries = 100;
     static budget = 1000000;
     static buyoutMax = 1;
     static acceptRawAuctions = true;

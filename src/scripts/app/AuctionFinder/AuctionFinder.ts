@@ -77,13 +77,22 @@ export default class AuctionFinder {
             let buyoutCount = AuctionFinderConfig.buyoutMax;
             let currentAuction = auctionSort[i];
             let currentBudget = currentAuction.auctionCost;
+            if(currentBudget < currentAuction.auctionCost){
+                continue;
+            }
             let optimalFlipPriceIndex = i;
+            let priceCeiling = 0;
             //iterate over the remaining array
             for(let j = i + 1; j < auctionSort.length; j++){
                 //check if the current auction's base value is greater than the next auction's base value
                 if(currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue){
                     if(j != auctionSort.length - 1){
-                        optimalFlipPriceIndex = j;
+                        //check to see if it's worth it
+                        if(auctionSort[j].auctionCost < priceCeiling){
+                            optimalFlipPriceIndex = j;
+                            priceCeiling = Math.max(priceCeiling, 
+                                auctionSort[j].auctionCost - auctionSort[j].auctionBaseValue + currentAuction.auctionBaseValue);         
+                        }
                         continue; //keep moving
                     }
                     //we are worth more than all the other auctions

@@ -2,7 +2,7 @@
 import AuctionFinder from "../../../scripts/app/AuctionFinder/AuctionFinder";
 import AuctionFinderConfig from "../../../scripts/app/config/AuctionFinderConfig";
 import AuctionDisplayManager from "../../../scripts/app/render/AuctionDisplayManager";
-let flips = [{auction: {auctionData: {bin: true, item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
+let flips = [];//[{auction: {auctionData: {bin: true, item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
 function callback(){
     flips = AuctionFinder.flips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount);
 }
@@ -11,7 +11,11 @@ function copyAuction(i){
 }
 AuctionDisplayManager.registerAuctionRenderCallback(callback);
 </script>
-    
+{#if flips.length == 0}
+<div class="refreshMessage">
+    <p>No flips currently found; refresh to update.</p>
+</div>
+{/if}
 {#each flips as flip, i}
     <div class="auctions">
         <div class="auctionBox">
@@ -41,6 +45,13 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
 {/each}
 
 <style lang="scss"> 
+    .refreshMessage{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2rem;
+        text-align: center;
+    }
     .name{
         display: flex;
         flex-direction: row;

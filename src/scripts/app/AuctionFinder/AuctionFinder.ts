@@ -57,7 +57,7 @@ export default class AuctionFinder {
             }
             if(AuctionFinderConfig.acceptRawAuctions){
                 let currentUnixTime = new Date().getTime();
-                if(auction.end - currentUnixTime >= AuctionFinderConfig.auctionConsiderationTime){
+                if(auction.end - currentUnixTime <= AuctionFinderConfig.auctionConsiderationTime){
                     auctions.push({
                         auctionType: auctionTypeParam,
                         auctionData: auction,

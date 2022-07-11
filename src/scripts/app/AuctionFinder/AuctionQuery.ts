@@ -11,7 +11,7 @@ export default class AuctionQuery {
         let data = await response.json();
         let totalPages = data["totalPages"];
         totalPages = Math.min(totalPages, AuctionFinderConfig.maxPageQueries);
-        console.log("Querying " + totalPages + "pages");
+        console.log("Querying " + totalPages + " Pages");
         for(let i = 0; i<totalPages; i++){
             console.log("Loading Page " + (i+1) + " of " + totalPages);
             let response = await fetch('https://api.hypixel.net/skyblock/auctions?page='+String(i))

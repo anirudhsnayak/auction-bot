@@ -115,27 +115,25 @@ export default class AuctionFinder {
             }
             let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
             let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
-            if(currentAuction.auctionData.bin){
-                if(maxValue < currentAuction.auctionBaseValue){ 
+            if(maxValue < currentAuction.auctionBaseValue){ 
+                if(currentAuction.auctionData.bin){
                     //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
-                    maxValue = currentAuction.auctionBaseValue;
+                    maxValue = currentAuction.auctionBaseValue; //only update if bin
                     if(max_profit_ < 0){continue;} //we lose money
                     this.flips.push({
                         auction: currentAuction,
                         min_profit: min_profit_,
                         max_profit: max_profit_
                     });
-                } 
-            } else {
-                //AH prices are volatile, we don't want to restrict ourselves
-                if(max_profit_ < 0){continue;} //we lose money
-                this.flips.push({
-                    auction: currentAuction,
-                    min_profit: min_profit_,
-                    max_profit: max_profit_
-                });
-            }
-            
+                } else {
+                    if(max_profit_ < 0){continue;} //we lose money
+                    this.flips.push({
+                        auction: currentAuction,
+                        min_profit: min_profit_,
+                        max_profit: max_profit_
+                    });
+                }
+            } 
         }
         //all flips have been calculated
     }

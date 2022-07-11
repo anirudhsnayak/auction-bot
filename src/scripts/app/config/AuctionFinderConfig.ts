@@ -1,3 +1,4 @@
+//update this to suit your needs
 export default class AuctionFinderConfig {
     static init = this.initialize();
     static maxPageQueries = 100;

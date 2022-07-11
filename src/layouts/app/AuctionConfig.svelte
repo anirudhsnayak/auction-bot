@@ -26,8 +26,8 @@ AuctionQuery.registerProgressCallback(updateProgress);
 </script>
 
 <div class="button-container">
-    <button class="refreshButton {active}">
-        <p class="refreshText" on:click="{queryAuction}">
+    <button class="refreshButton {active}" on:click="{queryAuction}">
+        <p class="refreshText">
         {#if active==="active"}
             Refresh
         {:else}

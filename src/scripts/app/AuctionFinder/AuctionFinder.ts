@@ -16,6 +16,7 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 export default class AuctionFinder {
     static flips = [];
     static bestAuctions = [];
+    static regularAuctions = [];
     static findAuctions(callback) {
         AuctionQuery.updateAuctions().then(combinedAuctions => {
             this.findAuctionsImpl(AuctionSeparator.separateAuctions(combinedAuctions));
@@ -42,6 +43,7 @@ export default class AuctionFinder {
         for(let key in auctions){
             this.findFlips(this.filterAuctions(key, auctions[key], valueFunction));
         }
+        console.log(this.regularAuctions);
     }
     static filterAuctions(auctionTypeParam, auctionListing, valueFunction){
         let auctions = [];
@@ -64,6 +66,7 @@ export default class AuctionFinder {
                         auctionCost: Math.max(auction.starting_bid, auction.highest_bid_amount),
                         auctionBaseValue: valueFunction(auction, auctionTypeParam)
                     });
+                    this.regularAuctions.push(auction);
                 }
             }
         }
@@ -80,26 +83,23 @@ export default class AuctionFinder {
             let optimalFlipPriceIndex = i;
             let priceCeiling = 0;
             if(currentBudget > AuctionFinderConfig.budget){
-                break;
+                break; //clearly everything after this exceeds our budget
             }
             //iterate over the remaining array
             for(let j = i + 1; j < auctionSort.length; j++){
+                if(!auctionSort[j].auctionData.bin){
+                    continue; //skip non-bin auctions
+                }
                 //check if the current auction's base value is greater than the next auction's base value
                 if(currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue){
-                    if(j != auctionSort.length - 1){
-                        //check to see if it's worth it
-                        if(auctionSort[j].auctionCost < priceCeiling){
-                            optimalFlipPriceIndex = j;
-                            priceCeiling = Math.max(priceCeiling, 
-                                auctionSort[j].auctionCost - auctionSort[j].auctionBaseValue + currentAuction.auctionBaseValue);         
-                        }
-                        continue; //keep moving
+                    //check to see if it's worth it
+                    if(auctionSort[j].auctionCost < priceCeiling){
+                        optimalFlipPriceIndex = j;
+                        priceCeiling = Math.max(priceCeiling, 
+                            auctionSort[j].auctionCost - auctionSort[j].auctionBaseValue + currentAuction.auctionBaseValue);         
                     }
-                    //we are worth more than all the other auctions
-                    this.bestAuctions.push(currentAuction);
-                    break;
+                    continue; //keep moving
                 } 
-                //time to compare
                 buyoutCount--; //attempt a buyout
                 if(AuctionFinderConfig.considerBuyoutBudget){
                     currentBudget += auctionSort[j].auctionCost;
@@ -107,35 +107,38 @@ export default class AuctionFinder {
                         buyoutCount = 0; //buyout failed
                     } 
                 }
-                //buyout finished!
-                if(buyoutCount <= 0){
-                    //no more buyouts left, time to calculate how much profit we could make
-                    let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
-                    let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
-                    if(max_profit_ < 0){
-                        break; //we lose money
-                    }
-                    if(!currentAuction.auctionData.bin){
-                        //AH prices are volatile, we don't want to restrict ourselves
-                        this.flips.push({
-                            auction: currentAuction,
-                            min_profit: min_profit_,
-                            max_profit: max_profit_
-                        });
-                        break;
-                    }
-                    if(maxValue < currentAuction.auctionBaseValue){ 
-                        //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
-                        maxValue = currentAuction.auctionBaseValue;
-                        this.flips.push({
-                            auction: currentAuction,
-                            min_profit: min_profit_,
-                            max_profit: max_profit_
-                        });
-                        break;
-                    } 
+                if(buyoutCount <= 0){ //buyout finished!
+                   break; //no more buyouts left, time to calculate how much profit we could make
                 }
             }   
+            if(optimalFlipPriceIndex = i){  //we are worth more than all the other auctions
+                this.bestAuctions.push(currentAuction);
+                continue;
+            }
+            let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
+            let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
+            if(max_profit_ < 0){
+                continue; //we lose money
+            }
+            if(!currentAuction.auctionData.bin){
+                //AH prices are volatile, we don't want to restrict ourselves
+                this.flips.push({
+                    auction: currentAuction,
+                    min_profit: min_profit_,
+                    max_profit: max_profit_
+                });
+                continue;
+            }
+            if(maxValue < currentAuction.auctionBaseValue){ 
+                //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
+                maxValue = currentAuction.auctionBaseValue;
+                this.flips.push({
+                    auction: currentAuction,
+                    min_profit: min_profit_,
+                    max_profit: max_profit_
+                });
+                continue;
+            } 
         }
         //all flips have been calculated
     }

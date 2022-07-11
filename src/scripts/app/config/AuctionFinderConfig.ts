@@ -2,8 +2,8 @@
 export default class AuctionFinderConfig {
     static init = this.initialize();
     static maxPageQueries = 100;
-    static maxAuctionDisplayCount = 10;
-    static budget = 1000000;
+    static maxAuctionDisplayCount = 30;
+    static budget = 10000000;
     static buyoutMax = 1;
     static acceptRawAuctions = true;
     static considerBuyoutBudget = false;
@@ -67,5 +67,5 @@ export default class AuctionFinderConfig {
         this.nameOverrideTable = {};
         return 0;
     }   
-    static auctionConsiderationTime = 5*60; //seconds
+    static auctionConsiderationTime = 5*60*1000; //ms
 }

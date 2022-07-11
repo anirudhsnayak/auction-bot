@@ -2,9 +2,15 @@
 import AuctionFinder from "../../../scripts/app/AuctionFinder/AuctionFinder";
 import AuctionFinderConfig from "../../../scripts/app/config/AuctionFinderConfig";
 import AuctionDisplayManager from "../../../scripts/app/render/AuctionDisplayManager";
-let flips = [{auction: {auctionData: {item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
+let flips = [{auction: {auctionData: {bin: true, item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
 function callback(){
-    flips = AuctionFinder.flips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount);
+    flips = [];
+    for(let flip of AuctionFinder.flips){
+        if (!flip.auction.auctionData.bin){
+            flips.push[flip];
+        }
+    }
+    //flips = AuctionFinder.flips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount);
 }
 function copyAuction(i){
     navigator.clipboard.writeText("/viewauction " + flips[i].auction.auctionData.uuid);
@@ -18,6 +24,15 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
             <div class="itemData">
                 <div class="name">
                     {flip.auction.auctionData.item_name}
+                    {#if flip.auction.auctionData.bin}
+                    <div class="auctionType bin">
+                        BIN
+                    </div>
+                    {:else}
+                    <div class="auctionType auction">
+                        AUCTION
+                    </div>
+                    {/if}
                 </div>
                 <div class="profit">
                     Minimum Expected Profit: {Math.round(flip.min_profit).toLocaleString("en-US")} coins <br>
@@ -33,6 +48,9 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
 
 <style lang="scss"> 
     .name{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
         font-size: 1.6rem;
     }
     .profit{
@@ -73,5 +91,19 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
     }
     .copy:active{
         background-color: rgb(51, 135, 51);
+    }
+    .auctionType{
+        margin-left: 0.75rem;
+        border: 1.75px solid white;
+        border-radius: 0.5rem;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        font-size: 1.2rem;
+    }
+    .bin{
+        background: green;
+    }
+    .auction{
+        background: crimson;
     }
 </style>

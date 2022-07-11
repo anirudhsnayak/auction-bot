@@ -12,11 +12,12 @@
 <style type="text/scss">
     .main{
         margin-left: 1rem;
-        margin-top: 0.5rem;
+        padding-top: 0.5rem;
     }
     .intro{
         font-size: 1.5rem;
         margin-bottom: 1rem;
+        margin-right: 1.5rem;
     }
     .title{
         font-size: 4rem;

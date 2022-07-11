@@ -1,9 +1,9 @@
 export default class AuctionDisplayManager{
-    static callback;
-    static registerAuctionRenderCallback(callbackParam){
-        this.callback = callbackParam;
+    static auctionRenderCallback;
+    static registerAuctionRenderCallback(callback){
+        this.auctionRenderCallback = callback;
     }
     static updateAuctionRender(){
-        this.callback();
+        this.auctionRenderCallback();
     }
 }

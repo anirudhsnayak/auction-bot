@@ -1,7 +1,11 @@
 import AuctionFinderConfig from "../config/AuctionFinderConfig";
 
 export default class AuctionQuery {
+    static progressCallback;
     static timeDelay = 100; //just to be safe :)
+    static registerProgressCallback(callback){
+        AuctionQuery.progressCallback = callback;
+    }
     static sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -23,6 +27,7 @@ export default class AuctionQuery {
             for(let j = 0; j<combinedAuctions[i].length; j++){
                 delete combinedAuctions[i][j].item_bytes;
             } //saves so much memory
+            AuctionQuery.progressCallback((i+1)/totalPages);
             await AuctionQuery.sleep(AuctionQuery.timeDelay); 
         }
         //console.log(combinedAuctions); //rip internet

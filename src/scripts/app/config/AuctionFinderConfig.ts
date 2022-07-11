@@ -3,10 +3,12 @@ export default class AuctionFinderConfig {
     static init = this.initialize();
     static maxPageQueries = 100;
     static maxAuctionDisplayCount = 30;
-    static budget = 10000000;
+    static budget = 1000000;
     static buyoutMax = 1;
     static acceptRawAuctions = true;
     static considerBuyoutBudget = false;
+    //starred items go before non-starred items
+    //basically more specific names go before less specific names
     static commodityWatchlist = ["Krampus Helmet", "Ultimate Carrot Candy Upgrade", "Jumbo Backpack Upgrade", "Enrichment", "Chimera I", "Pristine V", "Pristine I", "Soul Eater I",
                       "Autopet Rules", "French Bread", "Pioneer Pickaxe",  "Gorilla Monkey", "XX-Large Storage", "Tier Boost", "Beacon V", "Beacon IV", "Beacon III", "Beacon II", 
                       "Infinityboom TNT", "Flycatcher", "Pumpkin Launcher", "Lucky Clover", "Lesser Soulflow Engine", "Ancient Rose", "Reforge Anvil", "Exp Share", "Exp Share Core", "Enchanted Hopper", 
@@ -36,9 +38,9 @@ export default class AuctionFinderConfig {
                       "Rod of the Sea", "Juju Shortbow ✪✪✪✪✪", "Wand of Atonement", "Vorpal Katana", "Wither Goggles ✪✪✪✪✪",
                       "Warden Helmet", "Atomsplit Katana", "Aspect of the End", "Aspect of the Dragons"];
     static petWatchlist = ["!LEGENDARY Baby Yeti", "!EPIC Baby Yeti", "!LEGENDARY Squid", "!LEGENDARY Flying Fish", "!LEGENDARY Lion", "!LEGENDARY Elephant",
-                      "!LEGENDARY Tiger", "!LEGENDARY Black Cat", "!EPIC Tiger", "!LEGENDARY Blue Whale"]; //fill in the rest of the pets
+                      "!LEGENDARY Tiger", "!LEGENDARY Black Cat", "!EPIC Tiger", "!LEGENDARY Blue Whale", "!LEGENDARY Rabbit"]; //fill in the rest of the pets
     static petRarities = ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"];
-    static petMultiplierTable = {"!LEGENDARY Wolf":7, "!LEGENDARY Sheep":3, "!LEGENDARY Blue Whale":24, "!LEGENDARY Dolphin":20, 
+    static petMultiplierTable = {"!LEGENDARY Wolf":7, "!LEGENDARY Sheep":3, "!LEGENDARY Rabbit":5, "!LEGENDARY Blue Whale":24, "!LEGENDARY Dolphin":20, 
                       "!EPIC Dolphin":9, "!EPIC Tiger":10, "LEGENDARY Tiger": 13, "!LEGENDARY Spider": 34, "!LEGENDARY Tarantula": 19,
                       "!LEGENDARY Elephant": 8, "!MYTHIC Bat":2, "!LEGENDARY Bat":5, "!LEGENDARY Ender Dragon":13, "!LEGENDARY Black Cat": 26,
                       "!LEGENDARY Baby Yeti": 22, "!EPIC Baby Yeti":7, "!LEGENDARY Squid":10, "!LEGENDARY Flying Fish": 18, "!LEGENDARY Lion": 24
@@ -58,7 +60,7 @@ export default class AuctionFinderConfig {
                       "Growth VI": 2.1*m, "Protection VI": 2.1*m, "Soul Eater I": 1.19*m, 
                       "Soul Eater II": 2.7*m, "Soul Eater III": 5.54*m, "Soul Eater IV": 11.4 *m, "Soul Eater V": 21.7*m,
                       "Ultimate Wise I": 100*k, "Ultimate Wise II": 270*k, "Ultimate Wise III": 600*k, 
-                      "Ultimate Wise IV": 1.4*m, "Ultimate Wise V": 2.5*m, "§e(+20)": 300*k, "One For All": 8*m};
+                      "Ultimate Wise IV": 1.4*m, "Ultimate Wise V": 2.5*m, "§e(+20)": 300*k, "One For All": 8*m, "Enriched with": 2*m};
         this.loreValueTable = Object.assign({}, this.loreValueTable, this.petLoreValueTable);
         this.nameValueTable = {"Withered": 2.1*m, "Ancient": 600*k, "Necrotic": 300*k};
 

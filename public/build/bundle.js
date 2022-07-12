@@ -73,6 +73,20 @@ var app = (function () {
     function set_style(node, key, value, important) {
         node.style.setProperty(key, value, important ? 'important' : '');
     }
+    function select_option(select, value) {
+        for (let i = 0; i < select.options.length; i += 1) {
+            const option = select.options[i];
+            if (option.__value === value) {
+                option.selected = true;
+                return;
+            }
+        }
+        select.selectedIndex = -1; // no option should be selected
+    }
+    function select_value(select) {
+        const selected_option = select.querySelector(':checked') || select.options[0];
+        return selected_option && selected_option.__value;
+    }
     function custom_event(type, detail, bubbles = false) {
         const e = document.createEvent('CustomEvent');
         e.initCustomEvent(type, bubbles, false, detail);
@@ -419,7 +433,7 @@ var app = (function () {
     			h1.textContent = "Skyblock Auction Flipper";
     			t1 = space();
     			div0 = element("div");
-    			div0.textContent = "Hopefully this doesn't break. Keep in mind that this will cache the entire Skyblock\r\n        Auction House (about 60mb) to your personal device every time you refresh, so if you have a limited data plan, I suggest that you don't use this tool. \r\n        Due to API limits, refreshing may take up to 1 minute. The displayed flips are not guaranteed to always make profit, as this algorithm cannot take\r\n        every factor into account, and is still in development. Use common sense.";
+    			div0.textContent = "Hopefully this doesn't break. Keep in mind that this will cache the entire Skyblock\r\n        Auction House (about 60mb) to your personal device every time you refresh, so if you have a limited data plan, I suggest that you don't use this tool. \r\n        Due to API limits, refreshing may take up to 1 minute. The displayed flips are not guaranteed to always make profit, as this algorithm cannot take\r\n        every factor into account, and is still in development. Use common sense. To edit a query without refreshing, click the query button to make queries on\r\n        the currently cached Auction House.";
     			attr_dev(h1, "class", "title svelte-ljigq1");
     			add_location(h1, file$3, 3, 4, 57);
     			attr_dev(div0, "class", "intro svelte-ljigq1");
@@ -510,6 +524,11 @@ var app = (function () {
             if (params.maxAuctionDisplayCount != NaN) {
                 this.maxAuctionDisplayCount = params.maxAuctionDisplayCount;
             }
+            if (params.profitCriteria != NaN) {
+                this.profitCriteria = params.profitCriteria;
+            }
+            this.sortCriteria = params.sortCriteria;
+            this.shownItems = params.shownItems;
         }
     }
     _a = AuctionFinderConfig;
@@ -520,6 +539,14 @@ var app = (function () {
     AuctionFinderConfig.buyoutMax = 1;
     AuctionFinderConfig.acceptRawAuctions = true; //needs more testing
     AuctionFinderConfig.considerBuyoutBudget = false; //needs more testing
+    AuctionFinderConfig.profitCriteria = 0;
+    AuctionFinderConfig.sortCriteria = "Profit";
+    AuctionFinderConfig.shownItems = {
+        pets: true,
+        commodities: true,
+        talismans: true,
+        upgradables: true
+    };
     //starred items go before non-starred items
     //basically more specific names go before less specific names
     AuctionFinderConfig.commodityWatchlist = ["Krampus Helmet", "Ultimate Carrot Candy Upgrade", "Jumbo Backpack Upgrade", "Enrichment", "Chimera I", "Pristine V", "Pristine I", "Soul Eater I",
@@ -757,6 +784,8 @@ var app = (function () {
         It's the core algorithm to find the best flips.
 
         Potential improvements: (not just in this class)
+        - Display Flip Results Separately (commodities tend to be more reliable than other items)
+        - Add MORE items to the flip list
         - Stacked Items
         - Account for tier boosts
         - Upgrade flipping?
@@ -767,12 +796,25 @@ var app = (function () {
     class AuctionFinder {
         static findAuctions(callback) {
             AuctionQuery.updateAuctions().then(combinedAuctions => {
-                this.findAuctionsImpl(AuctionSeparator.separateAuctions(combinedAuctions));
-                //sort flips by max profit
-                this.flips.sort((a, b) => { return b.max_profit - a.max_profit; });
-                console.log(this.flips);
-                callback();
+                this.cachedAuctions = AuctionSeparator.separateAuctions(combinedAuctions);
+                this.queryAuctions(callback);
             });
+        }
+        static compareFlips(a, b) {
+            if (AuctionFinderConfig.sortCriteria === "Profit") {
+                return b.max_profit - a.max_profit;
+            }
+            if (AuctionFinderConfig.sortCriteria === "Efficiency") {
+                return (b.max_profit / b.auction.auctionCost) - (a.max_profit / a.auction.auctionCost);
+            }
+            return b.max_profit - a.max_profit;
+        }
+        static queryAuctions(callback) {
+            this.findAuctionsImpl(this.cachedAuctions);
+            //sort flips by max profit
+            this.flips.sort(this.compareFlips);
+            console.log(this.flips);
+            callback();
         }
         static findAuctionsImpl(auctions) {
             this.flips = [];
@@ -781,10 +823,18 @@ var app = (function () {
             let commodityAuctions = auctions.commodityAuctions;
             let talismanAuctions = auctions.talismanAuctions;
             let upgradableAuctions = auctions.upgradableAuctions;
-            this.findAuctionsCategory(petAuctions, AuctionEstimatedValue.getPetBaseValue);
-            this.findAuctionsCategory(commodityAuctions, AuctionEstimatedValue.getCommodityBaseValue);
-            this.findAuctionsCategory(talismanAuctions, AuctionEstimatedValue.getTalismanBaseValue);
-            this.findAuctionsCategory(upgradableAuctions, AuctionEstimatedValue.getUpgradableBaseValue);
+            if (AuctionFinderConfig.shownItems.pets) {
+                this.findAuctionsCategory(petAuctions, AuctionEstimatedValue.getPetBaseValue);
+            }
+            if (AuctionFinderConfig.shownItems.commodities) {
+                this.findAuctionsCategory(commodityAuctions, AuctionEstimatedValue.getCommodityBaseValue);
+            }
+            if (AuctionFinderConfig.shownItems.talismans) {
+                this.findAuctionsCategory(talismanAuctions, AuctionEstimatedValue.getTalismanBaseValue);
+            }
+            if (AuctionFinderConfig.shownItems.upgradables) {
+                this.findAuctionsCategory(upgradableAuctions, AuctionEstimatedValue.getUpgradableBaseValue);
+            }
         }
         static findAuctionsCategory(auctions, valueFunction) {
             for (let key in auctions) {
@@ -870,9 +920,9 @@ var app = (function () {
                 }
                 let min_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
                 let max_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex + 1].auctionCost - currentAuction.auctionCost;
-                if (max_profit_ < 0) {
+                if (max_profit_ < AuctionFinderConfig.profitCriteria) {
                     continue;
-                } //we lose money
+                } //we don't fit the criteria
                 this.flips.push({
                     auction: currentAuction,
                     min_profit: min_profit_,
@@ -884,6 +934,7 @@ var app = (function () {
     }
     AuctionFinder.flips = [];
     AuctionFinder.bestAuctions = [];
+    AuctionFinder.cachedAuctions = {};
 
     class AuctionDisplayManager {
         static registerAuctionRenderCallback(callback) {
@@ -899,7 +950,7 @@ var app = (function () {
     const { console: console_1 } = globals;
     const file$2 = "src\\layouts\\app\\AuctionConfig.svelte";
 
-    // (56:52) {:else}
+    // (106:51) {:else}
     function create_else_block$1(ctx) {
     	let t;
 
@@ -919,14 +970,14 @@ var app = (function () {
     		block,
     		id: create_else_block$1.name,
     		type: "else",
-    		source: "(56:52) {:else}",
+    		source: "(106:51) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (56:31) {#if active}
+    // (106:30) {#if active}
     function create_if_block$1(ctx) {
     	let t;
 
@@ -946,7 +997,7 @@ var app = (function () {
     		block,
     		id: create_if_block$1.name,
     		type: "if",
-    		source: "(56:31) {#if active}",
+    		source: "(106:30) {#if active}",
     		ctx
     	});
 
@@ -954,10 +1005,10 @@ var app = (function () {
     }
 
     function create_fragment$2(ctx) {
-    	let div4;
+    	let div11;
     	let div0;
     	let t1;
-    	let div3;
+    	let div10;
     	let div1;
     	let t2;
     	let input0;
@@ -966,13 +1017,45 @@ var app = (function () {
     	let t4;
     	let input1;
     	let t5;
-    	let div5;
-    	let button;
-    	let p;
-    	let button_class_value;
+    	let div3;
     	let t6;
+    	let input2;
+    	let t7;
+    	let div4;
+    	let t8;
+    	let select;
+    	let option0;
+    	let option1;
+    	let t11;
+    	let div5;
+    	let span;
+    	let t13;
     	let div6;
-    	let div6_class_value;
+    	let t14;
+    	let input3;
+    	let t15;
+    	let div7;
+    	let t16;
+    	let input4;
+    	let t17;
+    	let div8;
+    	let t18;
+    	let input5;
+    	let t19;
+    	let div9;
+    	let t20;
+    	let input6;
+    	let t21;
+    	let div12;
+    	let button0;
+    	let p0;
+    	let t23;
+    	let button1;
+    	let p1;
+    	let button1_class_value;
+    	let t24;
+    	let div13;
+    	let div13_class_value;
     	let mounted;
     	let dispose;
 
@@ -986,81 +1069,210 @@ var app = (function () {
 
     	const block = {
     		c: function create() {
-    			div4 = element("div");
+    			div11 = element("div");
     			div0 = element("div");
     			div0.textContent = "Configuration:";
     			t1 = space();
-    			div3 = element("div");
+    			div10 = element("div");
     			div1 = element("div");
     			t2 = text("Budget: ");
     			input0 = element("input");
     			t3 = space();
     			div2 = element("div");
-    			t4 = text("Max Flips Displayed: ");
+    			t4 = text("Profit Criteria: ");
     			input1 = element("input");
     			t5 = space();
+    			div3 = element("div");
+    			t6 = text("Max Flips Displayed: ");
+    			input2 = element("input");
+    			t7 = space();
+    			div4 = element("div");
+    			t8 = text("Sort Criteria: ");
+    			select = element("select");
+    			option0 = element("option");
+    			option0.textContent = "Efficiency";
+    			option1 = element("option");
+    			option1.textContent = "Profit";
+    			t11 = space();
     			div5 = element("div");
-    			button = element("button");
-    			p = element("p");
-    			if_block.c();
-    			t6 = space();
+    			span = element("span");
+    			span.textContent = "Show:";
+    			t13 = space();
     			div6 = element("div");
-    			attr_dev(div0, "class", "config-title svelte-4jsfz0");
-    			add_location(div0, file$2, 43, 4, 1443);
-    			attr_dev(input0, "class", "input budgetInput svelte-4jsfz0");
+    			t14 = text("Pets ");
+    			input3 = element("input");
+    			t15 = space();
+    			div7 = element("div");
+    			t16 = text("Commodities ");
+    			input4 = element("input");
+    			t17 = space();
+    			div8 = element("div");
+    			t18 = text("Talismans ");
+    			input5 = element("input");
+    			t19 = space();
+    			div9 = element("div");
+    			t20 = text("Upgradables ");
+    			input6 = element("input");
+    			t21 = space();
+    			div12 = element("div");
+    			button0 = element("button");
+    			p0 = element("p");
+    			p0.textContent = "Query";
+    			t23 = space();
+    			button1 = element("button");
+    			p1 = element("p");
+    			if_block.c();
+    			t24 = space();
+    			div13 = element("div");
+    			attr_dev(div0, "class", "config-title svelte-wf9ru2");
+    			add_location(div0, file$2, 66, 4, 2038);
+    			attr_dev(input0, "class", "input budgetInput svelte-wf9ru2");
     			attr_dev(input0, "type", "text");
-    			add_location(input0, file$2, 46, 20, 1573);
-    			attr_dev(div1, "class", "budget");
-    			add_location(div1, file$2, 45, 8, 1531);
-    			attr_dev(input1, "class", "input maxDisplayInput svelte-4jsfz0");
+    			add_location(input0, file$2, 69, 20, 2167);
+    			attr_dev(div1, "class", "field svelte-wf9ru2");
+    			add_location(div1, file$2, 68, 8, 2126);
+    			attr_dev(input1, "class", "input profitCriteriaInput svelte-wf9ru2");
     			attr_dev(input1, "type", "text");
-    			add_location(input1, file$2, 49, 33, 1733);
-    			attr_dev(div2, "class", "maxDisplay");
-    			add_location(div2, file$2, 48, 8, 1674);
-    			attr_dev(div3, "class", "config-menu svelte-4jsfz0");
-    			add_location(div3, file$2, 44, 4, 1496);
-    			attr_dev(div4, "class", "config svelte-4jsfz0");
-    			add_location(div4, file$2, 42, 0, 1417);
-    			attr_dev(p, "class", "refreshText svelte-4jsfz0");
-    			add_location(p, file$2, 55, 8, 1975);
-    			attr_dev(button, "class", button_class_value = "refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-4jsfz0");
-    			add_location(button, file$2, 54, 4, 1884);
-    			attr_dev(div5, "class", "button-container svelte-4jsfz0");
-    			add_location(div5, file$2, 53, 0, 1848);
-    			attr_dev(div6, "class", div6_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-4jsfz0");
-    			set_style(div6, "width", /*loadingPercent*/ ctx[1] + "%");
-    			add_location(div6, file$2, 58, 0, 2074);
+    			add_location(input1, file$2, 72, 29, 2318);
+    			attr_dev(div2, "class", "field svelte-wf9ru2");
+    			add_location(div2, file$2, 71, 8, 2268);
+    			attr_dev(input2, "class", "input maxDisplayInput svelte-wf9ru2");
+    			attr_dev(input2, "type", "text");
+    			add_location(input2, file$2, 75, 33, 2483);
+    			attr_dev(div3, "class", "field svelte-wf9ru2");
+    			add_location(div3, file$2, 74, 8, 2429);
+    			option0.__value = "Efficiency";
+    			option0.value = option0.__value;
+    			add_location(option0, file$2, 79, 16, 2723);
+    			option1.__value = "Profit";
+    			option1.value = option1.__value;
+    			add_location(option1, file$2, 80, 16, 2787);
+    			attr_dev(select, "class", "input filterCriteriaInput svelte-wf9ru2");
+    			if (/*sortCriteria*/ ctx[5] === void 0) add_render_callback(() => /*select_change_handler*/ ctx[12].call(select));
+    			add_location(select, file$2, 78, 27, 2634);
+    			attr_dev(div4, "class", "field svelte-wf9ru2");
+    			add_location(div4, file$2, 77, 8, 2586);
+    			attr_dev(span, "class", "showTitle svelte-wf9ru2");
+    			add_location(span, file$2, 84, 12, 2907);
+    			attr_dev(div5, "class", "field svelte-wf9ru2");
+    			add_location(div5, file$2, 83, 8, 2874);
+    			attr_dev(input3, "type", "checkbox");
+    			attr_dev(input3, "class", "check svelte-wf9ru2");
+    			attr_dev(input3, "name", "showPets");
+    			add_location(input3, file$2, 87, 17, 3007);
+    			attr_dev(div6, "class", "field svelte-wf9ru2");
+    			add_location(div6, file$2, 86, 8, 2969);
+    			attr_dev(input4, "type", "checkbox");
+    			attr_dev(input4, "class", "check svelte-wf9ru2");
+    			attr_dev(input4, "name", "showCommodities");
+    			add_location(input4, file$2, 90, 24, 3167);
+    			attr_dev(div7, "class", "field svelte-wf9ru2");
+    			add_location(div7, file$2, 89, 8, 3120);
+    			attr_dev(input5, "type", "checkbox");
+    			attr_dev(input5, "class", "check svelte-wf9ru2");
+    			attr_dev(input5, "name", "showTalismans");
+    			add_location(input5, file$2, 93, 22, 3337);
+    			attr_dev(div8, "class", "field svelte-wf9ru2");
+    			add_location(div8, file$2, 92, 8, 3294);
+    			attr_dev(input6, "type", "checkbox");
+    			attr_dev(input6, "class", "check svelte-wf9ru2");
+    			attr_dev(input6, "name", "showUpgradables");
+    			add_location(input6, file$2, 96, 24, 3513);
+    			attr_dev(div9, "class", "field svelte-wf9ru2");
+    			add_location(div9, file$2, 95, 8, 3464);
+    			attr_dev(div10, "class", "config-menu svelte-wf9ru2");
+    			add_location(div10, file$2, 67, 4, 2091);
+    			attr_dev(div11, "class", "config svelte-wf9ru2");
+    			add_location(div11, file$2, 65, 0, 2012);
+    			attr_dev(p0, "class", "buttonText svelte-wf9ru2");
+    			add_location(p0, file$2, 102, 8, 3759);
+    			attr_dev(button0, "class", "button queryButton svelte-wf9ru2");
+    			add_location(button0, file$2, 101, 4, 3688);
+    			attr_dev(p1, "class", "buttonText svelte-wf9ru2");
+    			add_location(p1, file$2, 105, 8, 3911);
+    			attr_dev(button1, "class", button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2");
+    			add_location(button1, file$2, 104, 4, 3811);
+    			attr_dev(div12, "class", "button-container svelte-wf9ru2");
+    			add_location(div12, file$2, 100, 0, 3652);
+    			attr_dev(div13, "class", div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2");
+    			set_style(div13, "width", /*loadingPercent*/ ctx[1] + "%");
+    			add_location(div13, file$2, 108, 0, 4009);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, div4, anchor);
-    			append_dev(div4, div0);
-    			append_dev(div4, t1);
-    			append_dev(div4, div3);
-    			append_dev(div3, div1);
+    			insert_dev(target, div11, anchor);
+    			append_dev(div11, div0);
+    			append_dev(div11, t1);
+    			append_dev(div11, div10);
+    			append_dev(div10, div1);
     			append_dev(div1, t2);
     			append_dev(div1, input0);
     			set_input_value(input0, /*budgetInput*/ ctx[2]);
-    			append_dev(div3, t3);
-    			append_dev(div3, div2);
+    			append_dev(div10, t3);
+    			append_dev(div10, div2);
     			append_dev(div2, t4);
     			append_dev(div2, input1);
-    			set_input_value(input1, /*maxDisplay*/ ctx[3]);
-    			insert_dev(target, t5, anchor);
-    			insert_dev(target, div5, anchor);
-    			append_dev(div5, button);
-    			append_dev(button, p);
-    			if_block.m(p, null);
-    			insert_dev(target, t6, anchor);
-    			insert_dev(target, div6, anchor);
+    			set_input_value(input1, /*profitCriteria*/ ctx[4]);
+    			append_dev(div10, t5);
+    			append_dev(div10, div3);
+    			append_dev(div3, t6);
+    			append_dev(div3, input2);
+    			set_input_value(input2, /*maxDisplay*/ ctx[3]);
+    			append_dev(div10, t7);
+    			append_dev(div10, div4);
+    			append_dev(div4, t8);
+    			append_dev(div4, select);
+    			append_dev(select, option0);
+    			append_dev(select, option1);
+    			select_option(select, /*sortCriteria*/ ctx[5]);
+    			append_dev(div10, t11);
+    			append_dev(div10, div5);
+    			append_dev(div5, span);
+    			append_dev(div10, t13);
+    			append_dev(div10, div6);
+    			append_dev(div6, t14);
+    			append_dev(div6, input3);
+    			input3.checked = /*shownItems*/ ctx[6].pets;
+    			append_dev(div10, t15);
+    			append_dev(div10, div7);
+    			append_dev(div7, t16);
+    			append_dev(div7, input4);
+    			input4.checked = /*shownItems*/ ctx[6].commodities;
+    			append_dev(div10, t17);
+    			append_dev(div10, div8);
+    			append_dev(div8, t18);
+    			append_dev(div8, input5);
+    			input5.checked = /*shownItems*/ ctx[6].talismans;
+    			append_dev(div10, t19);
+    			append_dev(div10, div9);
+    			append_dev(div9, t20);
+    			append_dev(div9, input6);
+    			input6.checked = /*shownItems*/ ctx[6].upgradables;
+    			insert_dev(target, t21, anchor);
+    			insert_dev(target, div12, anchor);
+    			append_dev(div12, button0);
+    			append_dev(button0, p0);
+    			append_dev(div12, t23);
+    			append_dev(div12, button1);
+    			append_dev(button1, p1);
+    			if_block.m(p1, null);
+    			insert_dev(target, t24, anchor);
+    			insert_dev(target, div13, anchor);
 
     			if (!mounted) {
     				dispose = [
-    					listen_dev(input0, "input", /*input0_input_handler*/ ctx[5]),
-    					listen_dev(input1, "input", /*input1_input_handler*/ ctx[6]),
-    					listen_dev(button, "click", /*queryAuction*/ ctx[4], false, false, false)
+    					listen_dev(input0, "input", /*input0_input_handler*/ ctx[9]),
+    					listen_dev(input1, "input", /*input1_input_handler*/ ctx[10]),
+    					listen_dev(input2, "input", /*input2_input_handler*/ ctx[11]),
+    					listen_dev(select, "change", /*select_change_handler*/ ctx[12]),
+    					listen_dev(input3, "change", /*input3_change_handler*/ ctx[13]),
+    					listen_dev(input4, "change", /*input4_change_handler*/ ctx[14]),
+    					listen_dev(input5, "change", /*input5_change_handler*/ ctx[15]),
+    					listen_dev(input6, "change", /*input6_change_handler*/ ctx[16]),
+    					listen_dev(button0, "click", /*queryAuction*/ ctx[8], false, false, false),
+    					listen_dev(button1, "click", /*refreshAuction*/ ctx[7], false, false, false)
     				];
 
     				mounted = true;
@@ -1071,8 +1283,32 @@ var app = (function () {
     				set_input_value(input0, /*budgetInput*/ ctx[2]);
     			}
 
-    			if (dirty & /*maxDisplay*/ 8 && input1.value !== /*maxDisplay*/ ctx[3]) {
-    				set_input_value(input1, /*maxDisplay*/ ctx[3]);
+    			if (dirty & /*profitCriteria*/ 16 && input1.value !== /*profitCriteria*/ ctx[4]) {
+    				set_input_value(input1, /*profitCriteria*/ ctx[4]);
+    			}
+
+    			if (dirty & /*maxDisplay*/ 8 && input2.value !== /*maxDisplay*/ ctx[3]) {
+    				set_input_value(input2, /*maxDisplay*/ ctx[3]);
+    			}
+
+    			if (dirty & /*sortCriteria*/ 32) {
+    				select_option(select, /*sortCriteria*/ ctx[5]);
+    			}
+
+    			if (dirty & /*shownItems*/ 64) {
+    				input3.checked = /*shownItems*/ ctx[6].pets;
+    			}
+
+    			if (dirty & /*shownItems*/ 64) {
+    				input4.checked = /*shownItems*/ ctx[6].commodities;
+    			}
+
+    			if (dirty & /*shownItems*/ 64) {
+    				input5.checked = /*shownItems*/ ctx[6].talismans;
+    			}
+
+    			if (dirty & /*shownItems*/ 64) {
+    				input6.checked = /*shownItems*/ ctx[6].upgradables;
     			}
 
     			if (current_block_type !== (current_block_type = select_block_type(ctx))) {
@@ -1081,31 +1317,31 @@ var app = (function () {
 
     				if (if_block) {
     					if_block.c();
-    					if_block.m(p, null);
+    					if_block.m(p1, null);
     				}
     			}
 
-    			if (dirty & /*active*/ 1 && button_class_value !== (button_class_value = "refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-4jsfz0")) {
-    				attr_dev(button, "class", button_class_value);
+    			if (dirty & /*active*/ 1 && button1_class_value !== (button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2")) {
+    				attr_dev(button1, "class", button1_class_value);
     			}
 
-    			if (dirty & /*active*/ 1 && div6_class_value !== (div6_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-4jsfz0")) {
-    				attr_dev(div6, "class", div6_class_value);
+    			if (dirty & /*active*/ 1 && div13_class_value !== (div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2")) {
+    				attr_dev(div13, "class", div13_class_value);
     			}
 
     			if (dirty & /*loadingPercent*/ 2) {
-    				set_style(div6, "width", /*loadingPercent*/ ctx[1] + "%");
+    				set_style(div13, "width", /*loadingPercent*/ ctx[1] + "%");
     			}
     		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div4);
-    			if (detaching) detach_dev(t5);
-    			if (detaching) detach_dev(div5);
+    			if (detaching) detach_dev(div11);
+    			if (detaching) detach_dev(t21);
+    			if (detaching) detach_dev(div12);
     			if_block.d();
-    			if (detaching) detach_dev(t6);
-    			if (detaching) detach_dev(div6);
+    			if (detaching) detach_dev(t24);
+    			if (detaching) detach_dev(div13);
     			mounted = false;
     			run_all(dispose);
     		}
@@ -1141,23 +1377,48 @@ var app = (function () {
     	validate_slots('AuctionConfig', slots, []);
     	let active = true;
     	let loadingPercent = 0;
-    	let budgetInput = "1,000,000";
-    	let maxDisplay = "10";
+    	let budgetInput = "5,000,000";
+    	let maxDisplay = "20";
+    	let profitCriteria = "0";
+    	let sortCriteria = "Profit";
 
-    	function queryAuction() {
+    	let shownItems = {
+    		pets: true,
+    		commodities: true,
+    		talismans: true,
+    		upgradables: true
+    	};
+
+    	function updateConfig() {
+    		AuctionFinderConfig.updateConfig({
+    			budget: cleanIntInput(budgetInput),
+    			maxAuctionDisplayCount: cleanIntInput(maxDisplay),
+    			profitCriteria: cleanIntInput(profitCriteria),
+    			sortCriteria,
+    			shownItems
+    		});
+    	}
+
+    	function refreshAuction() {
     		if (!active) {
     			return;
     		}
 
     		$$invalidate(0, active = false);
-
-    		AuctionFinderConfig.updateConfig({
-    			budget: cleanIntInput(budgetInput),
-    			maxAuctionDisplayCount: cleanIntInput(maxDisplay)
-    		});
-
+    		updateConfig();
     		console.log("Refreshing...");
     		AuctionFinder.findAuctions(renderAuctions);
+    	}
+
+    	function queryAuction() {
+    		updateConfig();
+    		console.log("Querying...");
+
+    		AuctionFinder.queryAuctions(() => {
+    			console.log("Queried!");
+    			renderAuctions();
+    			AuctionDisplayManager.updateAuctionRender();
+    		});
     	}
 
     	function renderAuctions() {
@@ -1190,8 +1451,38 @@ var app = (function () {
     	}
 
     	function input1_input_handler() {
+    		profitCriteria = this.value;
+    		$$invalidate(4, profitCriteria);
+    	}
+
+    	function input2_input_handler() {
     		maxDisplay = this.value;
     		$$invalidate(3, maxDisplay);
+    	}
+
+    	function select_change_handler() {
+    		sortCriteria = select_value(this);
+    		$$invalidate(5, sortCriteria);
+    	}
+
+    	function input3_change_handler() {
+    		shownItems.pets = this.checked;
+    		$$invalidate(6, shownItems);
+    	}
+
+    	function input4_change_handler() {
+    		shownItems.commodities = this.checked;
+    		$$invalidate(6, shownItems);
+    	}
+
+    	function input5_change_handler() {
+    		shownItems.talismans = this.checked;
+    		$$invalidate(6, shownItems);
+    	}
+
+    	function input6_change_handler() {
+    		shownItems.upgradables = this.checked;
+    		$$invalidate(6, shownItems);
     	}
 
     	$$self.$capture_state = () => ({
@@ -1203,7 +1494,12 @@ var app = (function () {
     		loadingPercent,
     		budgetInput,
     		maxDisplay,
+    		profitCriteria,
+    		sortCriteria,
+    		shownItems,
     		cleanIntInput,
+    		updateConfig,
+    		refreshAuction,
     		queryAuction,
     		renderAuctions,
     		updateProgress,
@@ -1215,6 +1511,9 @@ var app = (function () {
     		if ('loadingPercent' in $$props) $$invalidate(1, loadingPercent = $$props.loadingPercent);
     		if ('budgetInput' in $$props) $$invalidate(2, budgetInput = $$props.budgetInput);
     		if ('maxDisplay' in $$props) $$invalidate(3, maxDisplay = $$props.maxDisplay);
+    		if ('profitCriteria' in $$props) $$invalidate(4, profitCriteria = $$props.profitCriteria);
+    		if ('sortCriteria' in $$props) $$invalidate(5, sortCriteria = $$props.sortCriteria);
+    		if ('shownItems' in $$props) $$invalidate(6, shownItems = $$props.shownItems);
     	};
 
     	if ($$props && "$$inject" in $$props) {
@@ -1226,9 +1525,19 @@ var app = (function () {
     		loadingPercent,
     		budgetInput,
     		maxDisplay,
+    		profitCriteria,
+    		sortCriteria,
+    		shownItems,
+    		refreshAuction,
     		queryAuction,
     		input0_input_handler,
-    		input1_input_handler
+    		input1_input_handler,
+    		input2_input_handler,
+    		select_change_handler,
+    		input3_change_handler,
+    		input4_change_handler,
+    		input5_change_handler,
+    		input6_change_handler
     	];
     }
 

@@ -6,7 +6,8 @@
     <div class="intro">Hopefully this doesn't break. Keep in mind that this will cache the entire Skyblock
         Auction House (about 60mb) to your personal device every time you refresh, so if you have a limited data plan, I suggest that you don't use this tool. 
         Due to API limits, refreshing may take up to 1 minute. The displayed flips are not guaranteed to always make profit, as this algorithm cannot take
-        every factor into account, and is still in development. Use common sense.
+        every factor into account, and is still in development. Use common sense. To edit a query without refreshing, click the query button to make queries on
+        the currently cached Auction House.
     </div>
 </div>
 

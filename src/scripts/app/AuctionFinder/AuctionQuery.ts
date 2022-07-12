@@ -33,6 +33,7 @@ export default class AuctionQuery {
         //console.log(combinedAuctions); //rip internet
         return combinedAuctions;
     }
+    static 
     // static queryAuctionPage(page){
     //     fetch('https://api.hypixel.net/skyblock/auctions?page='+String(page))
     //         .then(response => response.json())

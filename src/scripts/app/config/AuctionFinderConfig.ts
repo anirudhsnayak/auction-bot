@@ -8,6 +8,14 @@ export default class AuctionFinderConfig {
     static buyoutMax = 1;
     static acceptRawAuctions = true; //needs more testing
     static considerBuyoutBudget = false; //needs more testing
+    static profitCriteria = 0;
+    static sortCriteria = "Profit";
+    static shownItems = {
+        pets: true,
+        commodities: true,
+        talismans: true,
+        upgradables: true
+    }
     //starred items go before non-starred items
     //basically more specific names go before less specific names
     static commodityWatchlist = ["Krampus Helmet", "Ultimate Carrot Candy Upgrade", "Jumbo Backpack Upgrade", "Enrichment", "Chimera I", "Pristine V", "Pristine I", "Soul Eater I",
@@ -74,5 +82,8 @@ export default class AuctionFinderConfig {
     static updateConfig(params){
         if(params.budget != NaN) {this.budget = params.budget;}
         if(params.maxAuctionDisplayCount != NaN) {this.maxAuctionDisplayCount = params.maxAuctionDisplayCount;}
+        if(params.profitCriteria != NaN) {this.profitCriteria = params.profitCriteria;}
+        this.sortCriteria = params.sortCriteria;
+        this.shownItems = params.shownItems;
     }
 }

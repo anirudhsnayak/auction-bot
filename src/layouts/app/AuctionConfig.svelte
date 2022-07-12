@@ -39,6 +39,7 @@ function refreshAuction(){
     AuctionFinder.findAuctions(renderAuctions);
 }
 function queryAuction(){
+    if(!active){return;}
     updateConfig();
     console.log("Querying...")
     AuctionFinder.queryAuctions(() => {
@@ -98,7 +99,7 @@ AuctionQuery.registerProgressCallback(updateProgress);
     </div>
 </div>
 <div class="button-container">
-    <button class="button queryButton" on:click="{queryAuction}">
+    <button class="button queryButton {getActiveClass(active)}" on:click="{queryAuction}">
         <p class="buttonText">Query</p>
     </button>
     <button class="button refreshButton {getActiveClass(active)}" on:click="{refreshAuction}">
@@ -157,10 +158,6 @@ AuctionQuery.registerProgressCallback(updateProgress);
         width: 9rem;
     }
 
-    //Button
-    .refreshButton.inactive{
-        background: rgb(188, 9, 9);
-    }
     .button-container {
         display: flex;
         justify-content: center;
@@ -175,14 +172,19 @@ AuctionQuery.registerProgressCallback(updateProgress);
         border-radius: 1.5rem;
         border: 1.5px solid white;
     }
+    .button.inactive{
+        background: rgb(188, 9, 9);
+    }
+    .button.active:hover{
+        cursor: pointer;
+    }
     .queryButton{
         background: rgb(206, 137, 8);
     }
-    .queryButton:hover{
+    .queryButton.active:hover{
         background: rgb(180, 117, 0);
-        cursor:pointer;
     }
-    .queryButton:active{
+    .queryButton.active:active{
         background: rgb(158, 103, 0);
     }
     .refreshButton{
@@ -190,7 +192,6 @@ AuctionQuery.registerProgressCallback(updateProgress);
     }
     .refreshButton.active:hover{
         background: rgb(21, 128, 163);
-        cursor: pointer;
     }
     .refreshButton.active:active{
         background: rgb(0, 106, 106);

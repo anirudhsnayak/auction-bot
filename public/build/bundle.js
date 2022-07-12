@@ -950,7 +950,7 @@ var app = (function () {
     const { console: console_1 } = globals;
     const file$2 = "src\\layouts\\app\\AuctionConfig.svelte";
 
-    // (106:51) {:else}
+    // (109:51) {:else}
     function create_else_block$1(ctx) {
     	let t;
 
@@ -970,14 +970,14 @@ var app = (function () {
     		block,
     		id: create_else_block$1.name,
     		type: "else",
-    		source: "(106:51) {:else}",
+    		source: "(109:51) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (106:30) {#if active}
+    // (109:30) {#if active}
     function create_if_block$1(ctx) {
     	let t;
 
@@ -997,7 +997,7 @@ var app = (function () {
     		block,
     		id: create_if_block$1.name,
     		type: "if",
-    		source: "(106:30) {#if active}",
+    		source: "(109:30) {#if active}",
     		ctx
     	});
 
@@ -1049,6 +1049,7 @@ var app = (function () {
     	let div12;
     	let button0;
     	let p0;
+    	let button0_class_value;
     	let t23;
     	let button1;
     	let p1;
@@ -1124,79 +1125,79 @@ var app = (function () {
     			if_block.c();
     			t24 = space();
     			div13 = element("div");
-    			attr_dev(div0, "class", "config-title svelte-wf9ru2");
-    			add_location(div0, file$2, 66, 4, 2038);
-    			attr_dev(input0, "class", "input budgetInput svelte-wf9ru2");
+    			attr_dev(div0, "class", "config-title svelte-1ng0gn3");
+    			add_location(div0, file$2, 69, 4, 2082);
+    			attr_dev(input0, "class", "input budgetInput svelte-1ng0gn3");
     			attr_dev(input0, "type", "text");
-    			add_location(input0, file$2, 69, 20, 2167);
-    			attr_dev(div1, "class", "field svelte-wf9ru2");
-    			add_location(div1, file$2, 68, 8, 2126);
-    			attr_dev(input1, "class", "input profitCriteriaInput svelte-wf9ru2");
+    			add_location(input0, file$2, 72, 20, 2211);
+    			attr_dev(div1, "class", "field svelte-1ng0gn3");
+    			add_location(div1, file$2, 71, 8, 2170);
+    			attr_dev(input1, "class", "input profitCriteriaInput svelte-1ng0gn3");
     			attr_dev(input1, "type", "text");
-    			add_location(input1, file$2, 72, 29, 2318);
-    			attr_dev(div2, "class", "field svelte-wf9ru2");
-    			add_location(div2, file$2, 71, 8, 2268);
-    			attr_dev(input2, "class", "input maxDisplayInput svelte-wf9ru2");
+    			add_location(input1, file$2, 75, 29, 2362);
+    			attr_dev(div2, "class", "field svelte-1ng0gn3");
+    			add_location(div2, file$2, 74, 8, 2312);
+    			attr_dev(input2, "class", "input maxDisplayInput svelte-1ng0gn3");
     			attr_dev(input2, "type", "text");
-    			add_location(input2, file$2, 75, 33, 2483);
-    			attr_dev(div3, "class", "field svelte-wf9ru2");
-    			add_location(div3, file$2, 74, 8, 2429);
+    			add_location(input2, file$2, 78, 33, 2527);
+    			attr_dev(div3, "class", "field svelte-1ng0gn3");
+    			add_location(div3, file$2, 77, 8, 2473);
     			option0.__value = "Efficiency";
     			option0.value = option0.__value;
-    			add_location(option0, file$2, 79, 16, 2723);
+    			add_location(option0, file$2, 82, 16, 2767);
     			option1.__value = "Profit";
     			option1.value = option1.__value;
-    			add_location(option1, file$2, 80, 16, 2787);
-    			attr_dev(select, "class", "input filterCriteriaInput svelte-wf9ru2");
+    			add_location(option1, file$2, 83, 16, 2831);
+    			attr_dev(select, "class", "input filterCriteriaInput svelte-1ng0gn3");
     			if (/*sortCriteria*/ ctx[5] === void 0) add_render_callback(() => /*select_change_handler*/ ctx[12].call(select));
-    			add_location(select, file$2, 78, 27, 2634);
-    			attr_dev(div4, "class", "field svelte-wf9ru2");
-    			add_location(div4, file$2, 77, 8, 2586);
-    			attr_dev(span, "class", "showTitle svelte-wf9ru2");
-    			add_location(span, file$2, 84, 12, 2907);
-    			attr_dev(div5, "class", "field svelte-wf9ru2");
-    			add_location(div5, file$2, 83, 8, 2874);
+    			add_location(select, file$2, 81, 27, 2678);
+    			attr_dev(div4, "class", "field svelte-1ng0gn3");
+    			add_location(div4, file$2, 80, 8, 2630);
+    			attr_dev(span, "class", "showTitle svelte-1ng0gn3");
+    			add_location(span, file$2, 87, 12, 2951);
+    			attr_dev(div5, "class", "field svelte-1ng0gn3");
+    			add_location(div5, file$2, 86, 8, 2918);
     			attr_dev(input3, "type", "checkbox");
-    			attr_dev(input3, "class", "check svelte-wf9ru2");
+    			attr_dev(input3, "class", "check svelte-1ng0gn3");
     			attr_dev(input3, "name", "showPets");
-    			add_location(input3, file$2, 87, 17, 3007);
-    			attr_dev(div6, "class", "field svelte-wf9ru2");
-    			add_location(div6, file$2, 86, 8, 2969);
+    			add_location(input3, file$2, 90, 17, 3051);
+    			attr_dev(div6, "class", "field svelte-1ng0gn3");
+    			add_location(div6, file$2, 89, 8, 3013);
     			attr_dev(input4, "type", "checkbox");
-    			attr_dev(input4, "class", "check svelte-wf9ru2");
+    			attr_dev(input4, "class", "check svelte-1ng0gn3");
     			attr_dev(input4, "name", "showCommodities");
-    			add_location(input4, file$2, 90, 24, 3167);
-    			attr_dev(div7, "class", "field svelte-wf9ru2");
-    			add_location(div7, file$2, 89, 8, 3120);
+    			add_location(input4, file$2, 93, 24, 3211);
+    			attr_dev(div7, "class", "field svelte-1ng0gn3");
+    			add_location(div7, file$2, 92, 8, 3164);
     			attr_dev(input5, "type", "checkbox");
-    			attr_dev(input5, "class", "check svelte-wf9ru2");
+    			attr_dev(input5, "class", "check svelte-1ng0gn3");
     			attr_dev(input5, "name", "showTalismans");
-    			add_location(input5, file$2, 93, 22, 3337);
-    			attr_dev(div8, "class", "field svelte-wf9ru2");
-    			add_location(div8, file$2, 92, 8, 3294);
+    			add_location(input5, file$2, 96, 22, 3381);
+    			attr_dev(div8, "class", "field svelte-1ng0gn3");
+    			add_location(div8, file$2, 95, 8, 3338);
     			attr_dev(input6, "type", "checkbox");
-    			attr_dev(input6, "class", "check svelte-wf9ru2");
+    			attr_dev(input6, "class", "check svelte-1ng0gn3");
     			attr_dev(input6, "name", "showUpgradables");
-    			add_location(input6, file$2, 96, 24, 3513);
-    			attr_dev(div9, "class", "field svelte-wf9ru2");
-    			add_location(div9, file$2, 95, 8, 3464);
-    			attr_dev(div10, "class", "config-menu svelte-wf9ru2");
-    			add_location(div10, file$2, 67, 4, 2091);
-    			attr_dev(div11, "class", "config svelte-wf9ru2");
-    			add_location(div11, file$2, 65, 0, 2012);
-    			attr_dev(p0, "class", "buttonText svelte-wf9ru2");
-    			add_location(p0, file$2, 102, 8, 3759);
-    			attr_dev(button0, "class", "button queryButton svelte-wf9ru2");
-    			add_location(button0, file$2, 101, 4, 3688);
-    			attr_dev(p1, "class", "buttonText svelte-wf9ru2");
-    			add_location(p1, file$2, 105, 8, 3911);
-    			attr_dev(button1, "class", button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2");
-    			add_location(button1, file$2, 104, 4, 3811);
-    			attr_dev(div12, "class", "button-container svelte-wf9ru2");
-    			add_location(div12, file$2, 100, 0, 3652);
-    			attr_dev(div13, "class", div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2");
+    			add_location(input6, file$2, 99, 24, 3557);
+    			attr_dev(div9, "class", "field svelte-1ng0gn3");
+    			add_location(div9, file$2, 98, 8, 3508);
+    			attr_dev(div10, "class", "config-menu svelte-1ng0gn3");
+    			add_location(div10, file$2, 70, 4, 2135);
+    			attr_dev(div11, "class", "config svelte-1ng0gn3");
+    			add_location(div11, file$2, 68, 0, 2056);
+    			attr_dev(p0, "class", "buttonText svelte-1ng0gn3");
+    			add_location(p0, file$2, 105, 8, 3828);
+    			attr_dev(button0, "class", button0_class_value = "button queryButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3");
+    			add_location(button0, file$2, 104, 4, 3732);
+    			attr_dev(p1, "class", "buttonText svelte-1ng0gn3");
+    			add_location(p1, file$2, 108, 8, 3980);
+    			attr_dev(button1, "class", button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3");
+    			add_location(button1, file$2, 107, 4, 3880);
+    			attr_dev(div12, "class", "button-container svelte-1ng0gn3");
+    			add_location(div12, file$2, 103, 0, 3696);
+    			attr_dev(div13, "class", div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3");
     			set_style(div13, "width", /*loadingPercent*/ ctx[1] + "%");
-    			add_location(div13, file$2, 108, 0, 4009);
+    			add_location(div13, file$2, 111, 0, 4078);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1311,6 +1312,10 @@ var app = (function () {
     				input6.checked = /*shownItems*/ ctx[6].upgradables;
     			}
 
+    			if (dirty & /*active*/ 1 && button0_class_value !== (button0_class_value = "button queryButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3")) {
+    				attr_dev(button0, "class", button0_class_value);
+    			}
+
     			if (current_block_type !== (current_block_type = select_block_type(ctx))) {
     				if_block.d(1);
     				if_block = current_block_type(ctx);
@@ -1321,11 +1326,11 @@ var app = (function () {
     				}
     			}
 
-    			if (dirty & /*active*/ 1 && button1_class_value !== (button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2")) {
+    			if (dirty & /*active*/ 1 && button1_class_value !== (button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3")) {
     				attr_dev(button1, "class", button1_class_value);
     			}
 
-    			if (dirty & /*active*/ 1 && div13_class_value !== (div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-wf9ru2")) {
+    			if (dirty & /*active*/ 1 && div13_class_value !== (div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3")) {
     				attr_dev(div13, "class", div13_class_value);
     			}
 
@@ -1411,6 +1416,10 @@ var app = (function () {
     	}
 
     	function queryAuction() {
+    		if (!active) {
+    			return;
+    		}
+
     		updateConfig();
     		console.log("Querying...");
 

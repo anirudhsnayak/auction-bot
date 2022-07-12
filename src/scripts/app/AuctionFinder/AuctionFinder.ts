@@ -115,9 +115,8 @@ export default class AuctionFinder {
             }
             let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
             let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
-            if(maxValue < currentAuction.auctionBaseValue){ 
+            if(maxValue < currentAuction.auctionBaseValue){  //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
                 if(currentAuction.auctionData.bin){
-                    //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
                     maxValue = currentAuction.auctionBaseValue; //only update if bin
                     if(max_profit_ < 0){continue;} //we lose money
                     this.flips.push({

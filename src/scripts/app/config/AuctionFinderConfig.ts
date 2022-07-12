@@ -1,12 +1,13 @@
 //update this to suit your needs
+//TODO: Create more config buttons on the UI if possible
 export default class AuctionFinderConfig {
     static init = this.initialize();
     static maxPageQueries = 100;
     static maxAuctionDisplayCount = 30;
     static budget = 1000000;
     static buyoutMax = 1;
-    static acceptRawAuctions = true;
-    static considerBuyoutBudget = false;
+    static acceptRawAuctions = true; //needs more testing
+    static considerBuyoutBudget = false; //needs more testing
     //starred items go before non-starred items
     //basically more specific names go before less specific names
     static commodityWatchlist = ["Krampus Helmet", "Ultimate Carrot Candy Upgrade", "Jumbo Backpack Upgrade", "Enrichment", "Chimera I", "Pristine V", "Pristine I", "Soul Eater I",
@@ -70,4 +71,8 @@ export default class AuctionFinderConfig {
         return 0;
     }   
     static auctionConsiderationTime = 5*60*1000; //ms
+    static updateConfig(params){
+        if(params.budget != NaN) {this.budget = params.budget;}
+        if(params.maxAuctionDisplayCount != NaN) {this.maxAuctionDisplayCount = params.maxAuctionDisplayCount;}
+    }
 }

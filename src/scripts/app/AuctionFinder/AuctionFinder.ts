@@ -8,6 +8,10 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 
     Potential improvements: (not just in this class)
     - Display Flip Results Separately (commodities tend to be more reliable than other items)
+    - ALL weapons should be checked separately for 5 stars
+    - Remove things that are in bazaar from check list
+    - Account for weapon/armor kills
+    - Account for upgraded armor (like with scarf frags)
     - Add MORE items to the flip list
     - Stacked Items
     - Account for tier boosts

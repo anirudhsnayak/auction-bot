@@ -606,7 +606,7 @@ var app = (function () {
                 let exit = false;
                 if (this.checkPet(auction)) {
                     for (let petType of AuctionFinderConfig.petWatchlist) {
-                        if (auction.item_name.includes(petType)) {
+                        if (this.identifyAuction(auction, petType)) {
                             if (petType in this.petAuctions) {
                                 this.petAuctions[petType].push(auction);
                             }
@@ -827,9 +827,17 @@ var app = (function () {
                 let currentAuction = auctionSort[i];
                 let currentBudget = currentAuction.auctionCost;
                 let optimalFlipPriceIndex = i;
-                let priceCeiling = 0;
+                let priceCeiling = Number.MAX_SAFE_INTEGER;
                 if (currentBudget > AuctionFinderConfig.budget) {
                     break; //clearly everything after this exceeds our budget
+                }
+                if (maxValue < currentAuction.auctionBaseValue) {
+                    if (currentAuction.auctionData.bin) { //bins are used as reference
+                        maxValue = currentAuction.auctionBaseValue;
+                    }
+                }
+                else {
+                    continue;
                 }
                 //iterate over the remaining array
                 for (let j = i + 1; j < auctionSort.length; j++) {
@@ -841,7 +849,7 @@ var app = (function () {
                         //check to see if it's worth it
                         if (auctionSort[j].auctionCost < priceCeiling) {
                             optimalFlipPriceIndex = j;
-                            priceCeiling = Math.max(priceCeiling, auctionSort[j].auctionCost - auctionSort[j].auctionBaseValue + currentAuction.auctionBaseValue);
+                            priceCeiling = Math.min(priceCeiling, auctionSort[j].auctionCost - auctionSort[j].auctionBaseValue + currentAuction.auctionBaseValue);
                         }
                         continue; //keep moving
                     }
@@ -862,29 +870,14 @@ var app = (function () {
                 }
                 let min_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
                 let max_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex + 1].auctionCost - currentAuction.auctionCost;
-                if (maxValue < currentAuction.auctionBaseValue) { //this auction is not a fake (hopefully), since you could just flip the cheaper auction otherwise
-                    if (currentAuction.auctionData.bin) {
-                        maxValue = currentAuction.auctionBaseValue; //only update if bin
-                        if (max_profit_ < 0) {
-                            continue;
-                        } //we lose money
-                        this.flips.push({
-                            auction: currentAuction,
-                            min_profit: min_profit_,
-                            max_profit: max_profit_
-                        });
-                    }
-                    else {
-                        if (max_profit_ < 0) {
-                            continue;
-                        } //we lose money
-                        this.flips.push({
-                            auction: currentAuction,
-                            min_profit: min_profit_,
-                            max_profit: max_profit_
-                        });
-                    }
-                }
+                if (max_profit_ < 0) {
+                    continue;
+                } //we lose money
+                this.flips.push({
+                    auction: currentAuction,
+                    min_profit: min_profit_,
+                    max_profit: max_profit_
+                });
             }
             //all flips have been calculated
         }

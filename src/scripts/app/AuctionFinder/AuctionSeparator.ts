@@ -16,7 +16,7 @@ export default class AuctionSeparator{
            let exit = false;
            if(this.checkPet(auction)){
                 for(let petType of AuctionFinderConfig.petWatchlist){
-                    if(auction.item_name.includes(petType)){
+                    if(this.identifyAuction(auction, petType)){
                         if(petType in this.petAuctions){
                             this.petAuctions[petType].push(auction);
                         } else {

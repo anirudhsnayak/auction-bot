@@ -7,8 +7,8 @@ let active = true;
 let loadingPercent = 0;
 let budgetInput = "5,000,000"; 
 let maxDisplay = "20";
-let profitCriteria = "0";
-let sortCriteria = "Profit";
+let profitCriteria = "100,000";
+let sortCriteria = "Efficiency";
 let shownItems = {
     pets: true,
     commodities: true,

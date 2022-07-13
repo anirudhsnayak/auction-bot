@@ -7,7 +7,11 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
     It's the core algorithm to find the best flips.
 
     Potential improvements: (not just in this class)
+    - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
+    - Figure out a way to deal with undervalued items bought from NPCs
     - Display Flip Results Separately (commodities tend to be more reliable than other items)
+    - Sort using one name for an armor set (instead of listing all of them)
+    - Sort using one name for a set of enchanted books (instead of listing all of them)
     - ALL weapons should be checked separately for 5 stars
     - Remove things that are in bazaar from check list
     - Account for weapon/armor kills

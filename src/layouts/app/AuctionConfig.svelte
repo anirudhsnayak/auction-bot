@@ -97,7 +97,7 @@ AuctionQuery.registerProgressCallback(updateProgress);
     </div>
 </div>
 <div class="button-container">
-    <button class="button queryButton {getActiveClass(active)}" on:click="{queryAuction}">
+    <button class="button queryButton" on:click="{queryAuction}">
         <p class="buttonText">Query</p>
     </button>
     <button class="button refreshButton {getActiveClass(active)}" on:click="{refreshAuction}">
@@ -173,16 +173,14 @@ AuctionQuery.registerProgressCallback(updateProgress);
     .button.inactive{
         background: rgb(188, 9, 9);
     }
-    .button.active:hover{
-        cursor: pointer;
-    }
     .queryButton{
         background: rgb(206, 137, 8);
     }
-    .queryButton.active:hover{
+    .queryButton:hover{
         background: rgb(180, 117, 0);
+        cursor: pointer;
     }
-    .queryButton.active:active{
+    .queryButton:active{
         background: rgb(158, 103, 0);
     }
     .refreshButton{
@@ -190,6 +188,7 @@ AuctionQuery.registerProgressCallback(updateProgress);
     }
     .refreshButton.active:hover{
         background: rgb(21, 128, 163);
+        cursor: pointer;
     }
     .refreshButton.active:active{
         background: rgb(0, 106, 106);

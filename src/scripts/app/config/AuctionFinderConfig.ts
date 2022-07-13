@@ -95,6 +95,7 @@ export default class AuctionFinderConfig {
         "Zombie Chestplate", "Zombie Leggings", "Zombie Boots", 
         "Revenant Chestplate", "Revenant Leggings", "Revenant Boots",
         "Reaper Chestplate", "Reaper Leggings", "Reaper Boots",
+        "Flamebreaker Helmet", "Flamebreaker Chestplate", "Flamebreaker Leggings", "Flamebreaker Boots",
         "Blaze Helmet", "Blaze Chestplate", "Blaze Leggings", "Blaze Boots",
         "Cheap Tuxedo Jacket", "Cheap Tuxedo Pants", "Cheap Tuxedo Oxfords",
         "Fancy Tuxedo Jacket", "Fancy Tuxedo Pants", "Fancy Tuxedo Oxfords",
@@ -189,7 +190,7 @@ export default class AuctionFinderConfig {
         let k = 1000;
         this.commodityWatchlist = this.commodityWatchlist.concat(this.skinWatchlist);
         this.petLoreValueTable = {"Minos Relic": 30*m, "Dwarf Turtle Shelmet": 2*m};
-        this.loreValueTable = {"§k":5*m, "Rejuvenate V":500*k, "Legion I":1*m, "Legion II":2*m, 
+        this.loreValueTable = {"Blast Protection VI": 0, "Fire Protection VI": 0, "§k":5*m, "Rejuvenate V":500*k, "Legion I":1*m, "Legion II":2*m, 
                       "Legion III":4*m,"Legion IV":7*m, "Legion V":13*m, "Wisdom I":100*k,
                       "Wisdom II":300*k, "Wisdom III":600*k, "Wisdom IV": 1.5*m, "Wisdom V": 2*m,
                       "Growth VI": 2.1*m, "Protection VI": 2.1*m, "Soul Eater I": 1.19*m, 

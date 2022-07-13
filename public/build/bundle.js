@@ -504,7 +504,7 @@ var app = (function () {
             let k = 1000;
             this.commodityWatchlist = this.commodityWatchlist.concat(this.skinWatchlist);
             this.petLoreValueTable = { "Minos Relic": 30 * m, "Dwarf Turtle Shelmet": 2 * m };
-            this.loreValueTable = { "§k": 5 * m, "Rejuvenate V": 500 * k, "Legion I": 1 * m, "Legion II": 2 * m,
+            this.loreValueTable = { "Blast Protection VI": 0, "Fire Protection VI": 0, "§k": 5 * m, "Rejuvenate V": 500 * k, "Legion I": 1 * m, "Legion II": 2 * m,
                 "Legion III": 4 * m, "Legion IV": 7 * m, "Legion V": 13 * m, "Wisdom I": 100 * k,
                 "Wisdom II": 300 * k, "Wisdom III": 600 * k, "Wisdom IV": 1.5 * m, "Wisdom V": 2 * m,
                 "Growth VI": 2.1 * m, "Protection VI": 2.1 * m, "Soul Eater I": 1.19 * m,
@@ -628,6 +628,7 @@ var app = (function () {
         "Zombie Chestplate", "Zombie Leggings", "Zombie Boots",
         "Revenant Chestplate", "Revenant Leggings", "Revenant Boots",
         "Reaper Chestplate", "Reaper Leggings", "Reaper Boots",
+        "Flamebreaker Helmet", "Flamebreaker Chestplate", "Flamebreaker Leggings", "Flamebreaker Boots",
         "Blaze Helmet", "Blaze Chestplate", "Blaze Leggings", "Blaze Boots",
         "Cheap Tuxedo Jacket", "Cheap Tuxedo Pants", "Cheap Tuxedo Oxfords",
         "Fancy Tuxedo Jacket", "Fancy Tuxedo Pants", "Fancy Tuxedo Oxfords",
@@ -914,6 +915,7 @@ var app = (function () {
         Potential improvements: (not just in this class)
         - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
         - DON'T RECALCULATE FLIPS FOR EACH QUERY. Cache the flip list, and then sort results based on query.
+        - Add perfect armor
         - Use historical prices as a better "price ceiling", if possible
         - Efficient separation while server is sending AH data
         - Figure out a way to deal with undervalued items bought from NPCs
@@ -1040,6 +1042,9 @@ var app = (function () {
         static findFlips(filteredAuctions, category_) {
             let maxValue = -1;
             //console.log(filteredAuctions);
+            if (filteredAuctions.length == 1) {
+                return;
+            }
             let auctionSort = filteredAuctions.sort((a, b) => { return a.auctionCost - b.auctionCost; });
             for (let i = 0; i < auctionSort.length; i++) {
                 let currentAuction = auctionSort[i];
@@ -1060,11 +1065,10 @@ var app = (function () {
                 else {
                     continue;
                 }
-                if (i == 0) {
-                    priceCeiling = auctionSort[i + 1].auctionCost - auctionSort[i + 1].auctionBaseValue + currentAuction.auctionBaseValue;
-                }
-                else {
-                    priceCeiling = auctionSort[i - 1].auctionCost - auctionSort[i - 1].auctionBaseValue + currentAuction.auctionBaseValue;
+                priceCeiling = auctionSort[1].auctionCost - auctionSort[1].auctionBaseValue + currentAuction.auctionBaseValue;
+                if (i != 0) {
+                    priceCeiling += auctionSort[0].auctionCost - auctionSort[0].auctionBaseValue + currentAuction.auctionBaseValue;
+                    priceCeiling /= 2; //averages are good
                 }
                 //iterate over the remaining array
                 for (let j = i + 1; j < auctionSort.length; j++) {

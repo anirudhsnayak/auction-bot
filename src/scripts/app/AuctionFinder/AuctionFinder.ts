@@ -9,6 +9,7 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
     Potential improvements: (not just in this class)
     - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
     - DON'T RECALCULATE FLIPS FOR EACH QUERY. Cache the flip list, and then sort results based on query.
+    - Add perfect armor
     - Use historical prices as a better "price ceiling", if possible
     - Efficient separation while server is sending AH data
     - Figure out a way to deal with undervalued items bought from NPCs
@@ -130,6 +131,9 @@ export default class AuctionFinder {
     static findFlips(filteredAuctions, category_){
         let maxValue = -1;
         //console.log(filteredAuctions);
+        if(filteredAuctions.length == 1){
+            return;
+        }
         let auctionSort = filteredAuctions.sort((a, b) => {return a.auctionCost - b.auctionCost;});
         for(let i = 0; i < auctionSort.length; i++){ 
             let currentAuction = auctionSort[i];
@@ -149,10 +153,10 @@ export default class AuctionFinder {
             } else {
                 continue;
             }
-            if(i == 0){
-                priceCeiling = auctionSort[i+1].auctionCost - auctionSort[i+1].auctionBaseValue + currentAuction.auctionBaseValue;
-            } else {
-                priceCeiling = auctionSort[i-1].auctionCost - auctionSort[i-1].auctionBaseValue + currentAuction.auctionBaseValue;
+            priceCeiling = auctionSort[1].auctionCost - auctionSort[1].auctionBaseValue + currentAuction.auctionBaseValue;
+            if(i != 0){
+                priceCeiling += auctionSort[0].auctionCost - auctionSort[0].auctionBaseValue + currentAuction.auctionBaseValue;
+                priceCeiling /= 2; //averages are good
             } 
             //iterate over the remaining array
             for(let j = i + 1; j < auctionSort.length; j++){

@@ -8,6 +8,7 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 
     Potential improvements: (not just in this class)
     - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
+    - Use historical prices as a better "price ceiling", if possible
     - Figure out a way to deal with undervalued items bought from NPCs
     - Display Flip Results Separately (commodities tend to be more reliable than other items)
     - Sort using one name for an armor set (instead of listing all of them)
@@ -106,22 +107,31 @@ export default class AuctionFinder {
         let maxValue = -1;
         //console.log(filteredAuctions);
         let auctionSort = filteredAuctions.sort((a, b) => {return a.auctionCost - b.auctionCost;});
-        for(let i = 0; i < auctionSort.length; i++){
+        for(let i = 0; i < auctionSort.length; i++){ 
             let buyoutCount = AuctionFinderConfig.buyoutMax;
             let currentAuction = auctionSort[i];
             let currentBudget = currentAuction.auctionCost;
             let optimalFlipPriceIndex = i;
-            let priceCeiling = Number.MAX_SAFE_INTEGER;
+            let priceCeiling;  
             if(currentBudget > AuctionFinderConfig.budget){
                 break; //clearly everything after this exceeds our budget
             }
             if(maxValue < currentAuction.auctionBaseValue){  
+                if(i == auctionSort.length - 1){
+                    this.bestAuctions.push(currentAuction); //to avoid out of bounds error
+                    continue;
+                }
                 if(currentAuction.auctionData.bin){ //bins are used as reference
                     maxValue = currentAuction.auctionBaseValue;
                 }
             } else {
                 continue;
             }
+            if(i == 0){
+                priceCeiling = auctionSort[i+1].auctionCost - auctionSort[i+1].auctionBaseValue + currentAuction.auctionBaseValue;
+            } else {
+                priceCeiling = auctionSort[i-1].auctionCost - auctionSort[i-1].auctionBaseValue + currentAuction.auctionBaseValue;
+            } 
             //iterate over the remaining array
             for(let j = i + 1; j < auctionSort.length; j++){
                 if(!auctionSort[j].auctionData.bin){
@@ -132,8 +142,7 @@ export default class AuctionFinder {
                     //check to see if it's worth it
                     if(auctionSort[j].auctionCost < priceCeiling){
                         optimalFlipPriceIndex = j;
-                        priceCeiling = Math.min(priceCeiling, 
-                            auctionSort[j].auctionCost - auctionSort[j].auctionBaseValue + currentAuction.auctionBaseValue);         
+                        break; //only going to get more expensive than here
                     }
                     continue; //keep moving
                 } 
@@ -154,6 +163,7 @@ export default class AuctionFinder {
             }
             let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
             let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
+            max_profit_ = Math.min(priceCeiling, max_profit_); //ensure flips by one gap aren't overvalued
             if(max_profit_ < AuctionFinderConfig.profitCriteria){continue;} //we don't fit the criteria
             this.flips.push({
                 auction: currentAuction,

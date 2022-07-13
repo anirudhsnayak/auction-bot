@@ -8,7 +8,9 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 
     Potential improvements: (not just in this class)
     - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
+    - DON'T RECALCULATE FLIPS FOR EACH QUERY. Cache the flip list, and then sort results based on query.
     - Use historical prices as a better "price ceiling", if possible
+    - Efficient separation while server is sending AH data
     - Figure out a way to deal with undervalued items bought from NPCs
     - Display Flip Results Separately (commodities tend to be more reliable than other items)
     - Sort using one name for an armor set (instead of listing all of them)
@@ -27,11 +29,11 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 */
 export default class AuctionFinder {
     static flips = [];
+    static queriedFlips = [];
     static bestAuctions = [];
-    static cachedAuctions = {};
     static findAuctions(callback) {
         AuctionQuery.updateAuctions().then(combinedAuctions => {
-            this.cachedAuctions = AuctionSeparator.separateAuctions(combinedAuctions);
+            this.findAuctionsImpl(AuctionSeparator.separateAuctions(combinedAuctions));
             this.queryAuctions(callback);
         });
     }
@@ -43,13 +45,43 @@ export default class AuctionFinder {
             return (b.max_profit/b.auction.auctionCost) - (a.max_profit/a.auction.auctionCost);
         } 
         return b.max_profit - a.max_profit;
-    }
+    } 
     static queryAuctions(callback){
-        this.findAuctionsImpl(this.cachedAuctions);
-        //sort flips by max profit
-        this.flips.sort(this.compareFlips);
-        console.log(this.flips);
+        //copy flips
+        this.queriedFlips = [];
+        for(let flip of this.flips){
+           if(this.checkFlipMatchesQuery(flip)){
+               this.queriedFlips.push(flip);
+           }
+        }
+        this.queriedFlips.sort(this.compareFlips);
+        console.log(this.queriedFlips);
         callback();
+    }
+    static checkFlipMatchesQuery(flip){
+        if(flip.auction.auctionCost > AuctionFinderConfig.budget){
+            return false;
+        }
+        if(flip.max_profit < AuctionFinderConfig.profitCriteria){
+            return false;
+        }
+        switch(flip.category){
+            case "Pet":
+                if(!AuctionFinderConfig.shownItems.pets){return false;}
+                break;
+            case "Commodity":
+                if(!AuctionFinderConfig.shownItems.commodities){return false;}
+                break;
+            case "Talisman":
+                if(!AuctionFinderConfig.shownItems.talismans){return false;}
+                break;
+            case "Upgradable":
+                if(!AuctionFinderConfig.shownItems.upgradables){return false;}
+                break;
+            default:
+                return false;
+        }
+        return true;
     }
     static findAuctionsImpl(auctions) {
         this.flips = [];
@@ -59,22 +91,14 @@ export default class AuctionFinder {
         let talismanAuctions = auctions.talismanAuctions;
         let upgradableAuctions = auctions.upgradableAuctions;
         
-        if(AuctionFinderConfig.shownItems.pets){
-            this.findAuctionsCategory(petAuctions, AuctionEstimatedValue.getPetBaseValue);
-        }
-        if(AuctionFinderConfig.shownItems.commodities){
-            this.findAuctionsCategory(commodityAuctions, AuctionEstimatedValue.getCommodityBaseValue);
-        }
-        if(AuctionFinderConfig.shownItems.talismans){
-            this.findAuctionsCategory(talismanAuctions, AuctionEstimatedValue.getTalismanBaseValue);
-        }
-        if(AuctionFinderConfig.shownItems.upgradables){
-            this.findAuctionsCategory(upgradableAuctions, AuctionEstimatedValue.getUpgradableBaseValue);
-        }
+        this.findAuctionsCategory(petAuctions, AuctionEstimatedValue.getPetBaseValue, "Pet");
+        this.findAuctionsCategory(commodityAuctions, AuctionEstimatedValue.getCommodityBaseValue, "Commodity");
+        this.findAuctionsCategory(talismanAuctions, AuctionEstimatedValue.getTalismanBaseValue, "Talisman");
+        this.findAuctionsCategory(upgradableAuctions, AuctionEstimatedValue.getUpgradableBaseValue, "Upgradable");
     }
-    static findAuctionsCategory(auctions, valueFunction){
+    static findAuctionsCategory(auctions, valueFunction, category){
         for(let key in auctions){
-            this.findFlips(this.filterAuctions(key, auctions[key], valueFunction));
+            this.findFlips(this.filterAuctions(key, auctions[key], valueFunction), category);
         }
     }
     static filterAuctions(auctionTypeParam, auctionListing, valueFunction){
@@ -103,19 +127,17 @@ export default class AuctionFinder {
         }
         return auctions;
     }
-    static findFlips(filteredAuctions){
+    static findFlips(filteredAuctions, category_){
         let maxValue = -1;
         //console.log(filteredAuctions);
         let auctionSort = filteredAuctions.sort((a, b) => {return a.auctionCost - b.auctionCost;});
         for(let i = 0; i < auctionSort.length; i++){ 
-            let buyoutCount = AuctionFinderConfig.buyoutMax;
             let currentAuction = auctionSort[i];
-            let currentBudget = currentAuction.auctionCost;
             let optimalFlipPriceIndex = i;
             let priceCeiling;  
-            if(currentBudget > AuctionFinderConfig.budget){
-                break; //clearly everything after this exceeds our budget
-            }
+            // if(currentBudget > AuctionFinderConfig.budget){
+            //     break; //clearly everything after this exceeds our budget
+            // }
             if(maxValue < currentAuction.auctionBaseValue){  
                 if(i == auctionSort.length - 1){
                     this.bestAuctions.push(currentAuction); //to avoid out of bounds error
@@ -137,24 +159,13 @@ export default class AuctionFinder {
                 if(!auctionSort[j].auctionData.bin){
                     continue; //skip non-bin auctions
                 }
-                //check if the current auction's base value is greater than the next auction's base value
-                if(currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue){
-                    //check to see if it's worth it
-                    if(auctionSort[j].auctionCost < priceCeiling){
-                        optimalFlipPriceIndex = j;
-                        break; //only going to get more expensive than here
-                    }
-                    continue; //keep moving
-                } 
-                buyoutCount--; //attempt a buyout
-                if(AuctionFinderConfig.considerBuyoutBudget){
-                    currentBudget += auctionSort[j].auctionCost;
-                    if(currentBudget > AuctionFinderConfig.budget){
-                        buyoutCount = 0; //buyout failed
-                    } 
+                if(auctionSort[j].auctionCost > priceCeiling){
+                    break; //clearly everything after this is more expensive 
                 }
-                if(buyoutCount <= 0){ //buyout finished!
-                   break; //no more buyouts left, time to calculate how much profit we could make
+                if(currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue){
+                    optimalFlipPriceIndex = j;
+                } else {
+                    break; //unlikely that this auction is better than the one which is valued higher
                 }
             }   
             if(optimalFlipPriceIndex == auctionSort.length-1){  //we are worth more than all the other auctions
@@ -163,12 +174,13 @@ export default class AuctionFinder {
             }
             let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
             let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
-            max_profit_ = Math.min(priceCeiling, max_profit_); //ensure flips by one gap aren't overvalued
-            if(max_profit_ < AuctionFinderConfig.profitCriteria){continue;} //we don't fit the criteria
+            max_profit_ = Math.min(priceCeiling-currentAuction.auctionCost, max_profit_); //ensure flips by one gap aren't overvalued
+            // if(max_profit_ < AuctionFinderConfig.profitCriteria){continue;} //we don't fit the criteria
             this.flips.push({
                 auction: currentAuction,
                 min_profit: min_profit_,
-                max_profit: max_profit_
+                max_profit: max_profit_,
+                category: category_
             });
         }
         //all flips have been calculated

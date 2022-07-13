@@ -536,9 +536,7 @@ var app = (function () {
     AuctionFinderConfig.maxPageQueries = 100;
     AuctionFinderConfig.maxAuctionDisplayCount = 30;
     AuctionFinderConfig.budget = 5000000;
-    AuctionFinderConfig.buyoutMax = 1;
     AuctionFinderConfig.acceptRawAuctions = true; //needs more testing
-    AuctionFinderConfig.considerBuyoutBudget = false; //needs more testing
     AuctionFinderConfig.profitCriteria = 0;
     AuctionFinderConfig.sortCriteria = "Efficiency";
     AuctionFinderConfig.shownItems = {
@@ -915,7 +913,9 @@ var app = (function () {
 
         Potential improvements: (not just in this class)
         - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
+        - DON'T RECALCULATE FLIPS FOR EACH QUERY. Cache the flip list, and then sort results based on query.
         - Use historical prices as a better "price ceiling", if possible
+        - Efficient separation while server is sending AH data
         - Figure out a way to deal with undervalued items bought from NPCs
         - Display Flip Results Separately (commodities tend to be more reliable than other items)
         - Sort using one name for an armor set (instead of listing all of them)
@@ -935,7 +935,7 @@ var app = (function () {
     class AuctionFinder {
         static findAuctions(callback) {
             AuctionQuery.updateAuctions().then(combinedAuctions => {
-                this.cachedAuctions = AuctionSeparator.separateAuctions(combinedAuctions);
+                this.findAuctionsImpl(AuctionSeparator.separateAuctions(combinedAuctions));
                 this.queryAuctions(callback);
             });
         }
@@ -949,11 +949,49 @@ var app = (function () {
             return b.max_profit - a.max_profit;
         }
         static queryAuctions(callback) {
-            this.findAuctionsImpl(this.cachedAuctions);
-            //sort flips by max profit
-            this.flips.sort(this.compareFlips);
-            console.log(this.flips);
+            //copy flips
+            this.queriedFlips = [];
+            for (let flip of this.flips) {
+                if (this.checkFlipMatchesQuery(flip)) {
+                    this.queriedFlips.push(flip);
+                }
+            }
+            this.queriedFlips.sort(this.compareFlips);
+            console.log(this.queriedFlips);
             callback();
+        }
+        static checkFlipMatchesQuery(flip) {
+            if (flip.auction.auctionCost > AuctionFinderConfig.budget) {
+                return false;
+            }
+            if (flip.max_profit < AuctionFinderConfig.profitCriteria) {
+                return false;
+            }
+            switch (flip.category) {
+                case "Pet":
+                    if (!AuctionFinderConfig.shownItems.pets) {
+                        return false;
+                    }
+                    break;
+                case "Commodity":
+                    if (!AuctionFinderConfig.shownItems.commodities) {
+                        return false;
+                    }
+                    break;
+                case "Talisman":
+                    if (!AuctionFinderConfig.shownItems.talismans) {
+                        return false;
+                    }
+                    break;
+                case "Upgradable":
+                    if (!AuctionFinderConfig.shownItems.upgradables) {
+                        return false;
+                    }
+                    break;
+                default:
+                    return false;
+            }
+            return true;
         }
         static findAuctionsImpl(auctions) {
             this.flips = [];
@@ -962,22 +1000,14 @@ var app = (function () {
             let commodityAuctions = auctions.commodityAuctions;
             let talismanAuctions = auctions.talismanAuctions;
             let upgradableAuctions = auctions.upgradableAuctions;
-            if (AuctionFinderConfig.shownItems.pets) {
-                this.findAuctionsCategory(petAuctions, AuctionEstimatedValue.getPetBaseValue);
-            }
-            if (AuctionFinderConfig.shownItems.commodities) {
-                this.findAuctionsCategory(commodityAuctions, AuctionEstimatedValue.getCommodityBaseValue);
-            }
-            if (AuctionFinderConfig.shownItems.talismans) {
-                this.findAuctionsCategory(talismanAuctions, AuctionEstimatedValue.getTalismanBaseValue);
-            }
-            if (AuctionFinderConfig.shownItems.upgradables) {
-                this.findAuctionsCategory(upgradableAuctions, AuctionEstimatedValue.getUpgradableBaseValue);
-            }
+            this.findAuctionsCategory(petAuctions, AuctionEstimatedValue.getPetBaseValue, "Pet");
+            this.findAuctionsCategory(commodityAuctions, AuctionEstimatedValue.getCommodityBaseValue, "Commodity");
+            this.findAuctionsCategory(talismanAuctions, AuctionEstimatedValue.getTalismanBaseValue, "Talisman");
+            this.findAuctionsCategory(upgradableAuctions, AuctionEstimatedValue.getUpgradableBaseValue, "Upgradable");
         }
-        static findAuctionsCategory(auctions, valueFunction) {
+        static findAuctionsCategory(auctions, valueFunction, category) {
             for (let key in auctions) {
-                this.findFlips(this.filterAuctions(key, auctions[key], valueFunction));
+                this.findFlips(this.filterAuctions(key, auctions[key], valueFunction), category);
             }
         }
         static filterAuctions(auctionTypeParam, auctionListing, valueFunction) {
@@ -1007,19 +1037,17 @@ var app = (function () {
             }
             return auctions;
         }
-        static findFlips(filteredAuctions) {
+        static findFlips(filteredAuctions, category_) {
             let maxValue = -1;
             //console.log(filteredAuctions);
             let auctionSort = filteredAuctions.sort((a, b) => { return a.auctionCost - b.auctionCost; });
             for (let i = 0; i < auctionSort.length; i++) {
-                let buyoutCount = AuctionFinderConfig.buyoutMax;
                 let currentAuction = auctionSort[i];
-                let currentBudget = currentAuction.auctionCost;
                 let optimalFlipPriceIndex = i;
                 let priceCeiling;
-                if (currentBudget > AuctionFinderConfig.budget) {
-                    break; //clearly everything after this exceeds our budget
-                }
+                // if(currentBudget > AuctionFinderConfig.budget){
+                //     break; //clearly everything after this exceeds our budget
+                // }
                 if (maxValue < currentAuction.auctionBaseValue) {
                     if (i == auctionSort.length - 1) {
                         this.bestAuctions.push(currentAuction); //to avoid out of bounds error
@@ -1043,24 +1071,14 @@ var app = (function () {
                     if (!auctionSort[j].auctionData.bin) {
                         continue; //skip non-bin auctions
                     }
-                    //check if the current auction's base value is greater than the next auction's base value
+                    if (auctionSort[j].auctionCost > priceCeiling) {
+                        break; //clearly everything after this is more expensive 
+                    }
                     if (currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue) {
-                        //check to see if it's worth it
-                        if (auctionSort[j].auctionCost < priceCeiling) {
-                            optimalFlipPriceIndex = j;
-                            break; //only going to get more expensive than here
-                        }
-                        continue; //keep moving
+                        optimalFlipPriceIndex = j;
                     }
-                    buyoutCount--; //attempt a buyout
-                    if (AuctionFinderConfig.considerBuyoutBudget) {
-                        currentBudget += auctionSort[j].auctionCost;
-                        if (currentBudget > AuctionFinderConfig.budget) {
-                            buyoutCount = 0; //buyout failed
-                        }
-                    }
-                    if (buyoutCount <= 0) { //buyout finished!
-                        break; //no more buyouts left, time to calculate how much profit we could make
+                    else {
+                        break; //unlikely that this auction is better than the one which is valued higher
                     }
                 }
                 if (optimalFlipPriceIndex == auctionSort.length - 1) { //we are worth more than all the other auctions
@@ -1069,22 +1087,21 @@ var app = (function () {
                 }
                 let min_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
                 let max_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex + 1].auctionCost - currentAuction.auctionCost;
-                max_profit_ = Math.min(priceCeiling, max_profit_); //ensure flips by one gap aren't overvalued
-                if (max_profit_ < AuctionFinderConfig.profitCriteria) {
-                    continue;
-                } //we don't fit the criteria
+                max_profit_ = Math.min(priceCeiling - currentAuction.auctionCost, max_profit_); //ensure flips by one gap aren't overvalued
+                // if(max_profit_ < AuctionFinderConfig.profitCriteria){continue;} //we don't fit the criteria
                 this.flips.push({
                     auction: currentAuction,
                     min_profit: min_profit_,
-                    max_profit: max_profit_
+                    max_profit: max_profit_,
+                    category: category_
                 });
             }
             //all flips have been calculated
         }
     }
     AuctionFinder.flips = [];
+    AuctionFinder.queriedFlips = [];
     AuctionFinder.bestAuctions = [];
-    AuctionFinder.cachedAuctions = {};
 
     class AuctionDisplayManager {
         static registerAuctionRenderCallback(callback) {
@@ -1100,7 +1117,7 @@ var app = (function () {
     const { console: console_1 } = globals;
     const file$2 = "src\\layouts\\app\\AuctionConfig.svelte";
 
-    // (109:51) {:else}
+    // (105:51) {:else}
     function create_else_block$1(ctx) {
     	let t;
 
@@ -1120,14 +1137,14 @@ var app = (function () {
     		block,
     		id: create_else_block$1.name,
     		type: "else",
-    		source: "(109:51) {:else}",
+    		source: "(105:51) {:else}",
     		ctx
     	});
 
     	return block;
     }
 
-    // (109:30) {#if active}
+    // (105:30) {#if active}
     function create_if_block$1(ctx) {
     	let t;
 
@@ -1147,7 +1164,7 @@ var app = (function () {
     		block,
     		id: create_if_block$1.name,
     		type: "if",
-    		source: "(109:30) {#if active}",
+    		source: "(105:30) {#if active}",
     		ctx
     	});
 
@@ -1276,78 +1293,78 @@ var app = (function () {
     			t24 = space();
     			div13 = element("div");
     			attr_dev(div0, "class", "config-title svelte-1ng0gn3");
-    			add_location(div0, file$2, 69, 4, 2092);
+    			add_location(div0, file$2, 65, 4, 2021);
     			attr_dev(input0, "class", "input budgetInput svelte-1ng0gn3");
     			attr_dev(input0, "type", "text");
-    			add_location(input0, file$2, 72, 20, 2221);
+    			add_location(input0, file$2, 68, 20, 2150);
     			attr_dev(div1, "class", "field svelte-1ng0gn3");
-    			add_location(div1, file$2, 71, 8, 2180);
+    			add_location(div1, file$2, 67, 8, 2109);
     			attr_dev(input1, "class", "input profitCriteriaInput svelte-1ng0gn3");
     			attr_dev(input1, "type", "text");
-    			add_location(input1, file$2, 75, 29, 2372);
+    			add_location(input1, file$2, 71, 29, 2301);
     			attr_dev(div2, "class", "field svelte-1ng0gn3");
-    			add_location(div2, file$2, 74, 8, 2322);
+    			add_location(div2, file$2, 70, 8, 2251);
     			attr_dev(input2, "class", "input maxDisplayInput svelte-1ng0gn3");
     			attr_dev(input2, "type", "text");
-    			add_location(input2, file$2, 78, 33, 2537);
+    			add_location(input2, file$2, 74, 33, 2466);
     			attr_dev(div3, "class", "field svelte-1ng0gn3");
-    			add_location(div3, file$2, 77, 8, 2483);
+    			add_location(div3, file$2, 73, 8, 2412);
     			option0.__value = "Efficiency";
     			option0.value = option0.__value;
-    			add_location(option0, file$2, 82, 16, 2777);
+    			add_location(option0, file$2, 78, 16, 2706);
     			option1.__value = "Profit";
     			option1.value = option1.__value;
-    			add_location(option1, file$2, 83, 16, 2841);
+    			add_location(option1, file$2, 79, 16, 2770);
     			attr_dev(select, "class", "input filterCriteriaInput svelte-1ng0gn3");
     			if (/*sortCriteria*/ ctx[5] === void 0) add_render_callback(() => /*select_change_handler*/ ctx[12].call(select));
-    			add_location(select, file$2, 81, 27, 2688);
+    			add_location(select, file$2, 77, 27, 2617);
     			attr_dev(div4, "class", "field svelte-1ng0gn3");
-    			add_location(div4, file$2, 80, 8, 2640);
+    			add_location(div4, file$2, 76, 8, 2569);
     			attr_dev(span, "class", "showTitle svelte-1ng0gn3");
-    			add_location(span, file$2, 87, 12, 2961);
+    			add_location(span, file$2, 83, 12, 2890);
     			attr_dev(div5, "class", "field svelte-1ng0gn3");
-    			add_location(div5, file$2, 86, 8, 2928);
+    			add_location(div5, file$2, 82, 8, 2857);
     			attr_dev(input3, "type", "checkbox");
     			attr_dev(input3, "class", "check svelte-1ng0gn3");
     			attr_dev(input3, "name", "showPets");
-    			add_location(input3, file$2, 90, 17, 3061);
+    			add_location(input3, file$2, 86, 17, 2990);
     			attr_dev(div6, "class", "field svelte-1ng0gn3");
-    			add_location(div6, file$2, 89, 8, 3023);
+    			add_location(div6, file$2, 85, 8, 2952);
     			attr_dev(input4, "type", "checkbox");
     			attr_dev(input4, "class", "check svelte-1ng0gn3");
     			attr_dev(input4, "name", "showCommodities");
-    			add_location(input4, file$2, 93, 24, 3221);
+    			add_location(input4, file$2, 89, 24, 3150);
     			attr_dev(div7, "class", "field svelte-1ng0gn3");
-    			add_location(div7, file$2, 92, 8, 3174);
+    			add_location(div7, file$2, 88, 8, 3103);
     			attr_dev(input5, "type", "checkbox");
     			attr_dev(input5, "class", "check svelte-1ng0gn3");
     			attr_dev(input5, "name", "showTalismans");
-    			add_location(input5, file$2, 96, 22, 3391);
+    			add_location(input5, file$2, 92, 22, 3320);
     			attr_dev(div8, "class", "field svelte-1ng0gn3");
-    			add_location(div8, file$2, 95, 8, 3348);
+    			add_location(div8, file$2, 91, 8, 3277);
     			attr_dev(input6, "type", "checkbox");
     			attr_dev(input6, "class", "check svelte-1ng0gn3");
     			attr_dev(input6, "name", "showUpgradables");
-    			add_location(input6, file$2, 99, 24, 3567);
+    			add_location(input6, file$2, 95, 24, 3496);
     			attr_dev(div9, "class", "field svelte-1ng0gn3");
-    			add_location(div9, file$2, 98, 8, 3518);
+    			add_location(div9, file$2, 94, 8, 3447);
     			attr_dev(div10, "class", "config-menu svelte-1ng0gn3");
-    			add_location(div10, file$2, 70, 4, 2145);
+    			add_location(div10, file$2, 66, 4, 2074);
     			attr_dev(div11, "class", "config svelte-1ng0gn3");
-    			add_location(div11, file$2, 68, 0, 2066);
+    			add_location(div11, file$2, 64, 0, 1995);
     			attr_dev(p0, "class", "buttonText svelte-1ng0gn3");
-    			add_location(p0, file$2, 105, 8, 3838);
+    			add_location(p0, file$2, 101, 8, 3767);
     			attr_dev(button0, "class", button0_class_value = "button queryButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3");
-    			add_location(button0, file$2, 104, 4, 3742);
+    			add_location(button0, file$2, 100, 4, 3671);
     			attr_dev(p1, "class", "buttonText svelte-1ng0gn3");
-    			add_location(p1, file$2, 108, 8, 3990);
+    			add_location(p1, file$2, 104, 8, 3919);
     			attr_dev(button1, "class", button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3");
-    			add_location(button1, file$2, 107, 4, 3890);
+    			add_location(button1, file$2, 103, 4, 3819);
     			attr_dev(div12, "class", "button-container svelte-1ng0gn3");
-    			add_location(div12, file$2, 103, 0, 3706);
+    			add_location(div12, file$2, 99, 0, 3635);
     			attr_dev(div13, "class", div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-1ng0gn3");
     			set_style(div13, "width", /*loadingPercent*/ ctx[1] + "%");
-    			add_location(div13, file$2, 111, 0, 4088);
+    			add_location(div13, file$2, 107, 0, 4017);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1566,16 +1583,11 @@ var app = (function () {
     	}
 
     	function queryAuction() {
-    		if (!active) {
-    			return;
-    		}
-
     		updateConfig();
     		console.log("Querying...");
 
     		AuctionFinder.queryAuctions(() => {
     			console.log("Queried!");
-    			renderAuctions();
     			AuctionDisplayManager.updateAuctionRender();
     		});
     	}
@@ -1734,9 +1746,9 @@ var app = (function () {
     			div = element("div");
     			p = element("p");
     			p.textContent = "No flips currently found; refresh to update.";
-    			add_location(p, file$1, 14, 4, 775);
+    			add_location(p, file$1, 14, 4, 782);
     			attr_dev(div, "class", "refreshMessage svelte-1djekzq");
-    			add_location(div, file$1, 13, 0, 741);
+    			add_location(div, file$1, 13, 0, 748);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -1767,7 +1779,7 @@ var app = (function () {
     			div = element("div");
     			div.textContent = "AUCTION";
     			attr_dev(div, "class", "auctionType auction svelte-1djekzq");
-    			add_location(div, file$1, 28, 20, 1274);
+    			add_location(div, file$1, 28, 20, 1281);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -1797,7 +1809,7 @@ var app = (function () {
     			div = element("div");
     			div.textContent = "BIN";
     			attr_dev(div, "class", "auctionType bin svelte-1djekzq");
-    			add_location(div, file$1, 24, 20, 1137);
+    			add_location(div, file$1, 24, 20, 1144);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div, anchor);
@@ -1830,17 +1842,22 @@ var app = (function () {
     	let t2;
     	let div1;
     	let t3;
-    	let t4_value = Math.round(/*flip*/ ctx[4].min_profit).toLocaleString("en-US") + "";
+    	let t4_value = Math.round(/*flip*/ ctx[4].auction.auctionCost).toLocaleString("en-US") + "";
     	let t4;
     	let t5;
-    	let br;
+    	let br0;
     	let t6;
-    	let t7_value = Math.round(/*flip*/ ctx[4].max_profit).toLocaleString("en-US") + "";
+    	let t7_value = Math.round(/*flip*/ ctx[4].min_profit).toLocaleString("en-US") + "";
     	let t7;
     	let t8;
+    	let br1;
     	let t9;
-    	let button;
+    	let t10_value = Math.round(/*flip*/ ctx[4].max_profit).toLocaleString("en-US") + "";
+    	let t10;
     	let t11;
+    	let t12;
+    	let button;
+    	let t14;
     	let mounted;
     	let dispose;
 
@@ -1867,30 +1884,35 @@ var app = (function () {
     			if_block.c();
     			t2 = space();
     			div1 = element("div");
-    			t3 = text("Minimum Expected Profit: ");
+    			t3 = text("Price: ");
     			t4 = text(t4_value);
     			t5 = text(" coins ");
-    			br = element("br");
-    			t6 = text("\r\n                    Maximum Expected Profit: ");
+    			br0 = element("br");
+    			t6 = text("\r\n                    Minimum Expected Profit: ");
     			t7 = text(t7_value);
-    			t8 = text(" coins");
-    			t9 = space();
+    			t8 = text(" coins ");
+    			br1 = element("br");
+    			t9 = text("\r\n                    Maximum Expected Profit: ");
+    			t10 = text(t10_value);
+    			t11 = text(" coins");
+    			t12 = space();
     			button = element("button");
     			button.textContent = "Copy Auction";
-    			t11 = space();
+    			t14 = space();
     			attr_dev(div0, "class", "name svelte-1djekzq");
-    			add_location(div0, file$1, 21, 16, 983);
-    			add_location(br, file$1, 34, 105, 1564);
+    			add_location(div0, file$1, 21, 16, 990);
+    			add_location(br0, file$1, 34, 96, 1562);
+    			add_location(br1, file$1, 35, 105, 1673);
     			attr_dev(div1, "class", "profit svelte-1djekzq");
-    			add_location(div1, file$1, 33, 16, 1437);
+    			add_location(div1, file$1, 33, 16, 1444);
     			attr_dev(div2, "class", "itemData svelte-1djekzq");
-    			add_location(div2, file$1, 20, 12, 943);
+    			add_location(div2, file$1, 20, 12, 950);
     			attr_dev(button, "class", "copy svelte-1djekzq");
-    			add_location(button, file$1, 38, 12, 1732);
+    			add_location(button, file$1, 39, 12, 1841);
     			attr_dev(div3, "class", "auctionBox svelte-1djekzq");
-    			add_location(div3, file$1, 19, 8, 905);
+    			add_location(div3, file$1, 19, 8, 912);
     			attr_dev(div4, "class", "auctions svelte-1djekzq");
-    			add_location(div4, file$1, 18, 4, 873);
+    			add_location(div4, file$1, 18, 4, 880);
     		},
     		m: function mount(target, anchor) {
     			insert_dev(target, div4, anchor);
@@ -1905,13 +1927,17 @@ var app = (function () {
     			append_dev(div1, t3);
     			append_dev(div1, t4);
     			append_dev(div1, t5);
-    			append_dev(div1, br);
+    			append_dev(div1, br0);
     			append_dev(div1, t6);
     			append_dev(div1, t7);
     			append_dev(div1, t8);
-    			append_dev(div3, t9);
+    			append_dev(div1, br1);
+    			append_dev(div1, t9);
+    			append_dev(div1, t10);
+    			append_dev(div1, t11);
+    			append_dev(div3, t12);
     			append_dev(div3, button);
-    			append_dev(div4, t11);
+    			append_dev(div4, t14);
 
     			if (!mounted) {
     				dispose = listen_dev(button, "click", click_handler, false, false, false);
@@ -1932,8 +1958,9 @@ var app = (function () {
     				}
     			}
 
-    			if (dirty & /*flips*/ 1 && t4_value !== (t4_value = Math.round(/*flip*/ ctx[4].min_profit).toLocaleString("en-US") + "")) set_data_dev(t4, t4_value);
-    			if (dirty & /*flips*/ 1 && t7_value !== (t7_value = Math.round(/*flip*/ ctx[4].max_profit).toLocaleString("en-US") + "")) set_data_dev(t7, t7_value);
+    			if (dirty & /*flips*/ 1 && t4_value !== (t4_value = Math.round(/*flip*/ ctx[4].auction.auctionCost).toLocaleString("en-US") + "")) set_data_dev(t4, t4_value);
+    			if (dirty & /*flips*/ 1 && t7_value !== (t7_value = Math.round(/*flip*/ ctx[4].min_profit).toLocaleString("en-US") + "")) set_data_dev(t7, t7_value);
+    			if (dirty & /*flips*/ 1 && t10_value !== (t10_value = Math.round(/*flip*/ ctx[4].max_profit).toLocaleString("en-US") + "")) set_data_dev(t10, t10_value);
     		},
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(div4);
@@ -2053,7 +2080,7 @@ var app = (function () {
     	let flips = []; //[{auction: {auctionData: {bin: true, item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
 
     	function callback() {
-    		$$invalidate(0, flips = AuctionFinder.flips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount));
+    		$$invalidate(0, flips = AuctionFinder.queriedFlips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount));
     	}
 
     	function copyAuction(i) {

@@ -4,7 +4,7 @@ import AuctionFinderConfig from "../../../scripts/app/config/AuctionFinderConfig
 import AuctionDisplayManager from "../../../scripts/app/render/AuctionDisplayManager";
 let flips = [];//[{auction: {auctionData: {bin: true, item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
 function callback(){
-    flips = AuctionFinder.flips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount);
+    flips = AuctionFinder.queriedFlips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount);
 }
 function copyAuction(i){
     navigator.clipboard.writeText("/viewauction " + flips[i].auction.auctionData.uuid);
@@ -33,6 +33,7 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
                     {/if}
                 </div>
                 <div class="profit">
+                    Price: {Math.round(flip.auction.auctionCost).toLocaleString("en-US")} coins <br>
                     Minimum Expected Profit: {Math.round(flip.min_profit).toLocaleString("en-US")} coins <br>
                     Maximum Expected Profit: {Math.round(flip.max_profit).toLocaleString("en-US")} coins
                 </div>

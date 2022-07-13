@@ -4,9 +4,7 @@ export default class AuctionFinderConfig {
     static maxPageQueries = 100;
     static maxAuctionDisplayCount = 30;
     static budget = 5000000;
-    static buyoutMax = 1;
     static acceptRawAuctions = true; //needs more testing
-    static considerBuyoutBudget = false; //needs more testing
     static profitCriteria = 0;
     static sortCriteria = "Efficiency";
     static shownItems = {

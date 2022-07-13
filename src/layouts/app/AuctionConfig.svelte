@@ -39,12 +39,10 @@ function refreshAuction(){
     AuctionFinder.findAuctions(renderAuctions);
 }
 function queryAuction(){
-    if(!active){return;}
     updateConfig();
     console.log("Querying...")
     AuctionFinder.queryAuctions(() => {
         console.log("Queried!")
-        renderAuctions();
         AuctionDisplayManager.updateAuctionRender();
     });
 }

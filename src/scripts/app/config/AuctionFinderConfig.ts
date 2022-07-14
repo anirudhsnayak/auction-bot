@@ -3,6 +3,7 @@
 export default class AuctionFinderConfig {
     static maxPageQueries = 100;
     static maxAuctionDisplayCount = 30;
+    static minVolume = 4; // need at least 4 items to consider an item
     static budget = 5000000;
     static acceptRawAuctions = true; //needs more testing
     static profitCriteria = 0;
@@ -190,13 +191,13 @@ export default class AuctionFinderConfig {
         let k = 1000;
         this.commodityWatchlist = this.commodityWatchlist.concat(this.skinWatchlist);
         this.petLoreValueTable = {"Minos Relic": 30*m, "Dwarf Turtle Shelmet": 2*m};
-        this.loreValueTable = {"Blast Protection VI": 0, "Fire Protection VI": 0, "§k":5*m, "Rejuvenate V":500*k, "Legion I":1*m, "Legion II":2*m, 
+        this.loreValueTable = { "§k":4*m, "Rejuvenate V":500*k, "Legion I":1*m, "Legion II":2*m, 
                       "Legion III":4*m,"Legion IV":7*m, "Legion V":13*m, "Wisdom I":100*k,
                       "Wisdom II":300*k, "Wisdom III":600*k, "Wisdom IV": 1.5*m, "Wisdom V": 2*m,
-                      "Growth VI": 2.1*m, "Protection VI": 2.1*m, "Soul Eater I": 1.19*m, 
+                     "Soul Eater I": 1.19*m, 
                       "Soul Eater II": 2.7*m, "Soul Eater III": 5.54*m, "Soul Eater IV": 11.4 *m, "Soul Eater V": 21.7*m,
                       "Ultimate Wise I": 100*k, "Ultimate Wise II": 270*k, "Ultimate Wise III": 600*k, 
-                      "Ultimate Wise IV": 1.4*m, "Ultimate Wise V": 2.5*m, "§e(+20)": 300*k, "One For All": 8*m, "Enriched with": 2*m};
+                      "Ultimate Wise IV": 1.4*m, "Ultimate Wise V": 2.5*m, "§e(+20)": 300*k, "One For All": 4*m, "Enriched with": 2*m};
         this.loreValueTable = Object.assign({}, this.loreValueTable, this.petLoreValueTable);
         this.nameValueTable = {"Withered": 2.1*m, "Ancient": 600*k, "Necrotic": 300*k};
 

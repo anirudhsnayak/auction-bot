@@ -9,6 +9,9 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
     Potential improvements: (not just in this class)
     - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
     - DON'T RECALCULATE FLIPS FOR EACH QUERY. Cache the flip list, and then sort results based on query.
+    - Issue of deadlock, one flip references another
+        - Add a buyout system to fix deadlock
+    - Make the tax calculation actually accurate
     - Add perfect armor
     - Use historical prices as a better "price ceiling", if possible
     - Efficient separation while server is sending AH data
@@ -129,41 +132,40 @@ export default class AuctionFinder {
         return auctions;
     }
     static findFlips(filteredAuctions, category_){
-        let maxValue = -1;
-        //console.log(filteredAuctions);
-        if(filteredAuctions.length == 1){
+        if(filteredAuctions.length < AuctionFinderConfig.minVolume){
             return;
         }
+        let maxBaseValue = -1;
         let auctionSort = filteredAuctions.sort((a, b) => {return a.auctionCost - b.auctionCost;});
+        let lowestRawCost = this.rawCostLeastBin(auctionSort);  
         for(let i = 0; i < auctionSort.length; i++){ 
             let currentAuction = auctionSort[i];
             let optimalFlipPriceIndex = i;
-            let priceCeiling;  
             // if(currentBudget > AuctionFinderConfig.budget){
             //     break; //clearly everything after this exceeds our budget
             // }
-            if(maxValue < currentAuction.auctionBaseValue){  
+            if(maxBaseValue < currentAuction.auctionBaseValue){  //ensures our item is the best we can get
                 if(i == auctionSort.length - 1){
                     this.bestAuctions.push(currentAuction); //to avoid out of bounds error
                     continue;
                 }
                 if(currentAuction.auctionData.bin){ //bins are used as reference
-                    maxValue = currentAuction.auctionBaseValue;
+                    maxBaseValue = currentAuction.auctionBaseValue;
                 }
             } else {
                 continue;
             }
-            priceCeiling = auctionSort[1].auctionCost - auctionSort[1].auctionBaseValue + currentAuction.auctionBaseValue;
-            if(i != 0){
-                priceCeiling += auctionSort[0].auctionCost - auctionSort[0].auctionBaseValue + currentAuction.auctionBaseValue;
-                priceCeiling /= 2; //averages are good
-            } 
+            let manufactureCost = lowestRawCost + currentAuction.auctionBaseValue; //using the lowest from last time
+            if(currentAuction.auctionData.bin){ //bins are used as reference
+                lowestRawCost = Math.min(lowestRawCost, currentAuction.auctionCost - currentAuction.auctionBaseValue);
+            }
             //iterate over the remaining array
             for(let j = i + 1; j < auctionSort.length; j++){
                 if(!auctionSort[j].auctionData.bin){
                     continue; //skip non-bin auctions
                 }
-                if(auctionSort[j].auctionCost > priceCeiling){
+                if(auctionSort[j].auctionCost > manufactureCost){ 
+                    //auctions can't be higher than the amt needed to make it in the first place
                     break; //clearly everything after this is more expensive 
                 }
                 if(currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue){
@@ -178,7 +180,8 @@ export default class AuctionFinder {
             }
             let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
             let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
-            max_profit_ = Math.min(priceCeiling-currentAuction.auctionCost, max_profit_); //ensure flips by one gap aren't overvalued
+            //we can't make more than the raw price to make the item
+            max_profit_ = Math.min(manufactureCost-currentAuction.auctionCost, max_profit_); 
             // if(max_profit_ < AuctionFinderConfig.profitCriteria){continue;} //we don't fit the criteria
             this.flips.push({
                 auction: currentAuction,
@@ -188,5 +191,13 @@ export default class AuctionFinder {
             });
         }
         //all flips have been calculated
+    }
+    static rawCostLeastBin(auctionSort){
+        for(let i = 0; i < auctionSort.length; i++){
+            if(auctionSort[i].auctionData.bin){
+                return auctionSort[i].auctionCost-auctionSort[i].auctionBaseValue;
+            }
+        }
+        return 0;
     }
 }

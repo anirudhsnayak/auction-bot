@@ -68,7 +68,7 @@ AuctionQuery.registerProgressCallback(updateProgress);
             Budget: <input class ="input budgetInput" type="text" bind:value="{budgetInput}"/> 
         </div>
         <div class="field">
-            Profit Criteria: <input class ="input profitCriteriaInput" type="text" bind:value="{profitCriteria}"/>
+            Min Profit: <input class ="input profitCriteriaInput" type="text" bind:value="{profitCriteria}"/>
         </div>
         <div class="field">
             Max Flips Displayed: <input class ="input maxDisplayInput" type="text" bind:value="{maxDisplay}"/>

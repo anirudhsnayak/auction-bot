@@ -504,13 +504,13 @@ var app = (function () {
             let k = 1000;
             this.commodityWatchlist = this.commodityWatchlist.concat(this.skinWatchlist);
             this.petLoreValueTable = { "Minos Relic": 30 * m, "Dwarf Turtle Shelmet": 2 * m };
-            this.loreValueTable = { "Blast Protection VI": 0, "Fire Protection VI": 0, "§k": 5 * m, "Rejuvenate V": 500 * k, "Legion I": 1 * m, "Legion II": 2 * m,
+            this.loreValueTable = { "§k": 4 * m, "Rejuvenate V": 500 * k, "Legion I": 1 * m, "Legion II": 2 * m,
                 "Legion III": 4 * m, "Legion IV": 7 * m, "Legion V": 13 * m, "Wisdom I": 100 * k,
                 "Wisdom II": 300 * k, "Wisdom III": 600 * k, "Wisdom IV": 1.5 * m, "Wisdom V": 2 * m,
-                "Growth VI": 2.1 * m, "Protection VI": 2.1 * m, "Soul Eater I": 1.19 * m,
+                "Soul Eater I": 1.19 * m,
                 "Soul Eater II": 2.7 * m, "Soul Eater III": 5.54 * m, "Soul Eater IV": 11.4 * m, "Soul Eater V": 21.7 * m,
                 "Ultimate Wise I": 100 * k, "Ultimate Wise II": 270 * k, "Ultimate Wise III": 600 * k,
-                "Ultimate Wise IV": 1.4 * m, "Ultimate Wise V": 2.5 * m, "§e(+20)": 300 * k, "One For All": 8 * m, "Enriched with": 2 * m };
+                "Ultimate Wise IV": 1.4 * m, "Ultimate Wise V": 2.5 * m, "§e(+20)": 300 * k, "One For All": 4 * m, "Enriched with": 2 * m };
             this.loreValueTable = Object.assign({}, this.loreValueTable, this.petLoreValueTable);
             this.nameValueTable = { "Withered": 2.1 * m, "Ancient": 600 * k, "Necrotic": 300 * k };
             //not really sure if these have a purpose but they're here just in case
@@ -535,6 +535,7 @@ var app = (function () {
     _a = AuctionFinderConfig;
     AuctionFinderConfig.maxPageQueries = 100;
     AuctionFinderConfig.maxAuctionDisplayCount = 30;
+    AuctionFinderConfig.minVolume = 4; // need at least 4 items to consider an item
     AuctionFinderConfig.budget = 5000000;
     AuctionFinderConfig.acceptRawAuctions = true; //needs more testing
     AuctionFinderConfig.profitCriteria = 0;
@@ -915,6 +916,9 @@ var app = (function () {
         Potential improvements: (not just in this class)
         - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
         - DON'T RECALCULATE FLIPS FOR EACH QUERY. Cache the flip list, and then sort results based on query.
+        - Issue of deadlock, one flip references another
+            - Add a buyout system to fix deadlock
+        - Make the tax calculation actually accurate
         - Add perfect armor
         - Use historical prices as a better "price ceiling", if possible
         - Efficient separation while server is sending AH data
@@ -1040,42 +1044,41 @@ var app = (function () {
             return auctions;
         }
         static findFlips(filteredAuctions, category_) {
-            let maxValue = -1;
-            //console.log(filteredAuctions);
-            if (filteredAuctions.length == 1) {
+            if (filteredAuctions.length < AuctionFinderConfig.minVolume) {
                 return;
             }
+            let maxBaseValue = -1;
             let auctionSort = filteredAuctions.sort((a, b) => { return a.auctionCost - b.auctionCost; });
+            let lowestRawCost = this.rawCostLeastBin(auctionSort);
             for (let i = 0; i < auctionSort.length; i++) {
                 let currentAuction = auctionSort[i];
                 let optimalFlipPriceIndex = i;
-                let priceCeiling;
                 // if(currentBudget > AuctionFinderConfig.budget){
                 //     break; //clearly everything after this exceeds our budget
                 // }
-                if (maxValue < currentAuction.auctionBaseValue) {
+                if (maxBaseValue < currentAuction.auctionBaseValue) { //ensures our item is the best we can get
                     if (i == auctionSort.length - 1) {
                         this.bestAuctions.push(currentAuction); //to avoid out of bounds error
                         continue;
                     }
                     if (currentAuction.auctionData.bin) { //bins are used as reference
-                        maxValue = currentAuction.auctionBaseValue;
+                        maxBaseValue = currentAuction.auctionBaseValue;
                     }
                 }
                 else {
                     continue;
                 }
-                priceCeiling = auctionSort[1].auctionCost - auctionSort[1].auctionBaseValue + currentAuction.auctionBaseValue;
-                if (i != 0) {
-                    priceCeiling += auctionSort[0].auctionCost - auctionSort[0].auctionBaseValue + currentAuction.auctionBaseValue;
-                    priceCeiling /= 2; //averages are good
+                let manufactureCost = lowestRawCost + currentAuction.auctionBaseValue; //using the lowest from last time
+                if (currentAuction.auctionData.bin) { //bins are used as reference
+                    lowestRawCost = Math.min(lowestRawCost, currentAuction.auctionCost - currentAuction.auctionBaseValue);
                 }
                 //iterate over the remaining array
                 for (let j = i + 1; j < auctionSort.length; j++) {
                     if (!auctionSort[j].auctionData.bin) {
                         continue; //skip non-bin auctions
                     }
-                    if (auctionSort[j].auctionCost > priceCeiling) {
+                    if (auctionSort[j].auctionCost > manufactureCost) {
+                        //auctions can't be higher than the amt needed to make it in the first place
                         break; //clearly everything after this is more expensive 
                     }
                     if (currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue) {
@@ -1091,7 +1094,8 @@ var app = (function () {
                 }
                 let min_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
                 let max_profit_ = 0.98 * auctionSort[optimalFlipPriceIndex + 1].auctionCost - currentAuction.auctionCost;
-                max_profit_ = Math.min(priceCeiling - currentAuction.auctionCost, max_profit_); //ensure flips by one gap aren't overvalued
+                //we can't make more than the raw price to make the item
+                max_profit_ = Math.min(manufactureCost - currentAuction.auctionCost, max_profit_);
                 // if(max_profit_ < AuctionFinderConfig.profitCriteria){continue;} //we don't fit the criteria
                 this.flips.push({
                     auction: currentAuction,
@@ -1101,6 +1105,14 @@ var app = (function () {
                 });
             }
             //all flips have been calculated
+        }
+        static rawCostLeastBin(auctionSort) {
+            for (let i = 0; i < auctionSort.length; i++) {
+                if (auctionSort[i].auctionData.bin) {
+                    return auctionSort[i].auctionCost - auctionSort[i].auctionBaseValue;
+                }
+            }
+            return 0;
         }
     }
     AuctionFinder.flips = [];
@@ -1250,7 +1262,7 @@ var app = (function () {
     			input0 = element("input");
     			t3 = space();
     			div2 = element("div");
-    			t4 = text("Profit Criteria: ");
+    			t4 = text("Min Profit: ");
     			input1 = element("input");
     			t5 = space();
     			div3 = element("div");
@@ -1304,70 +1316,70 @@ var app = (function () {
     			add_location(div1, file$2, 67, 8, 2109);
     			attr_dev(input1, "class", "input profitCriteriaInput svelte-u30qr");
     			attr_dev(input1, "type", "text");
-    			add_location(input1, file$2, 71, 29, 2301);
+    			add_location(input1, file$2, 71, 24, 2296);
     			attr_dev(div2, "class", "field svelte-u30qr");
     			add_location(div2, file$2, 70, 8, 2251);
     			attr_dev(input2, "class", "input maxDisplayInput svelte-u30qr");
     			attr_dev(input2, "type", "text");
-    			add_location(input2, file$2, 74, 33, 2466);
+    			add_location(input2, file$2, 74, 33, 2461);
     			attr_dev(div3, "class", "field svelte-u30qr");
-    			add_location(div3, file$2, 73, 8, 2412);
+    			add_location(div3, file$2, 73, 8, 2407);
     			option0.__value = "Efficiency";
     			option0.value = option0.__value;
-    			add_location(option0, file$2, 78, 16, 2706);
+    			add_location(option0, file$2, 78, 16, 2701);
     			option1.__value = "Profit";
     			option1.value = option1.__value;
-    			add_location(option1, file$2, 79, 16, 2770);
+    			add_location(option1, file$2, 79, 16, 2765);
     			attr_dev(select, "class", "input filterCriteriaInput svelte-u30qr");
     			if (/*sortCriteria*/ ctx[5] === void 0) add_render_callback(() => /*select_change_handler*/ ctx[12].call(select));
-    			add_location(select, file$2, 77, 27, 2617);
+    			add_location(select, file$2, 77, 27, 2612);
     			attr_dev(div4, "class", "field svelte-u30qr");
-    			add_location(div4, file$2, 76, 8, 2569);
+    			add_location(div4, file$2, 76, 8, 2564);
     			attr_dev(span, "class", "showTitle svelte-u30qr");
-    			add_location(span, file$2, 83, 12, 2890);
+    			add_location(span, file$2, 83, 12, 2885);
     			attr_dev(div5, "class", "field svelte-u30qr");
-    			add_location(div5, file$2, 82, 8, 2857);
+    			add_location(div5, file$2, 82, 8, 2852);
     			attr_dev(input3, "type", "checkbox");
     			attr_dev(input3, "class", "check svelte-u30qr");
     			attr_dev(input3, "name", "showPets");
-    			add_location(input3, file$2, 86, 17, 2990);
+    			add_location(input3, file$2, 86, 17, 2985);
     			attr_dev(div6, "class", "field svelte-u30qr");
-    			add_location(div6, file$2, 85, 8, 2952);
+    			add_location(div6, file$2, 85, 8, 2947);
     			attr_dev(input4, "type", "checkbox");
     			attr_dev(input4, "class", "check svelte-u30qr");
     			attr_dev(input4, "name", "showCommodities");
-    			add_location(input4, file$2, 89, 24, 3150);
+    			add_location(input4, file$2, 89, 24, 3145);
     			attr_dev(div7, "class", "field svelte-u30qr");
-    			add_location(div7, file$2, 88, 8, 3103);
+    			add_location(div7, file$2, 88, 8, 3098);
     			attr_dev(input5, "type", "checkbox");
     			attr_dev(input5, "class", "check svelte-u30qr");
     			attr_dev(input5, "name", "showTalismans");
-    			add_location(input5, file$2, 92, 22, 3320);
+    			add_location(input5, file$2, 92, 22, 3315);
     			attr_dev(div8, "class", "field svelte-u30qr");
-    			add_location(div8, file$2, 91, 8, 3277);
+    			add_location(div8, file$2, 91, 8, 3272);
     			attr_dev(input6, "type", "checkbox");
     			attr_dev(input6, "class", "check svelte-u30qr");
     			attr_dev(input6, "name", "showUpgradables");
-    			add_location(input6, file$2, 95, 24, 3496);
+    			add_location(input6, file$2, 95, 24, 3491);
     			attr_dev(div9, "class", "field svelte-u30qr");
-    			add_location(div9, file$2, 94, 8, 3447);
+    			add_location(div9, file$2, 94, 8, 3442);
     			attr_dev(div10, "class", "config-menu svelte-u30qr");
     			add_location(div10, file$2, 66, 4, 2074);
     			attr_dev(div11, "class", "config svelte-u30qr");
     			add_location(div11, file$2, 64, 0, 1995);
     			attr_dev(p0, "class", "buttonText svelte-u30qr");
-    			add_location(p0, file$2, 101, 8, 3742);
+    			add_location(p0, file$2, 101, 8, 3737);
     			attr_dev(button0, "class", "button queryButton svelte-u30qr");
-    			add_location(button0, file$2, 100, 4, 3671);
+    			add_location(button0, file$2, 100, 4, 3666);
     			attr_dev(p1, "class", "buttonText svelte-u30qr");
-    			add_location(p1, file$2, 104, 8, 3894);
+    			add_location(p1, file$2, 104, 8, 3889);
     			attr_dev(button1, "class", button1_class_value = "button refreshButton " + getActiveClass(/*active*/ ctx[0]) + " svelte-u30qr");
-    			add_location(button1, file$2, 103, 4, 3794);
+    			add_location(button1, file$2, 103, 4, 3789);
     			attr_dev(div12, "class", "button-container svelte-u30qr");
-    			add_location(div12, file$2, 99, 0, 3635);
+    			add_location(div12, file$2, 99, 0, 3630);
     			attr_dev(div13, "class", div13_class_value = "progressBar " + getActiveClass(/*active*/ ctx[0]) + " svelte-u30qr");
     			set_style(div13, "width", /*loadingPercent*/ ctx[1] + "%");
-    			add_location(div13, file$2, 107, 0, 3992);
+    			add_location(div13, file$2, 107, 0, 3987);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");

@@ -186,21 +186,34 @@ export default class AuctionFinderConfig {
     static loreOverrideTable;
     static nameValueTable;
     static nameOverrideTable;
+    static enchantValueTable;
     static initialize() {
         let m = 1000000;
         let k = 1000;
         this.commodityWatchlist = this.commodityWatchlist.concat(this.skinWatchlist);
         this.petLoreValueTable = {"Minos Relic": 30*m, "Dwarf Turtle Shelmet": 2*m};
-        this.loreValueTable = { "§k":4*m, "Rejuvenate V":500*k, "Legion I":1*m, "Legion II":2*m, 
-                      "Legion III":4*m,"Legion IV":7*m, "Legion V":13*m, "Wisdom I":100*k,
-                      "Wisdom II":300*k, "Wisdom III":600*k, "Wisdom IV": 1.5*m, "Wisdom V": 2*m,
-                     "Soul Eater I": 1.19*m, 
-                      "Soul Eater II": 2.7*m, "Soul Eater III": 5.54*m, "Soul Eater IV": 11.4 *m, "Soul Eater V": 21.7*m,
-                      "Ultimate Wise I": 100*k, "Ultimate Wise II": 270*k, "Ultimate Wise III": 600*k, 
-                      "Ultimate Wise IV": 1.4*m, "Ultimate Wise V": 2.5*m, "§e(+20)": 300*k, "One For All": 4*m, "Enriched with": 2*m};
+        this.loreValueTable = { //may need to edit
+            "§k":4*m, "§e(+20)": 300*k, "Enriched with": 2*m, 
+            "Ender Slayer VI": 500*k, "Experience IV": 200*k, 
+            "Life Steal IV": 50*k, "Smite VII": 2.5*m, "Syphon IV": 100*k, "Vampirism VI": 200*k,
+            "Power VI": 400*k, "Fire Protection VII": 1*m, "Blast Protection VII": 5*m,
+            "Rejuvenate V":400*k, "Respite IV": 100*k, "Respite V": 250*k, 
+            "Respite I": 50*k, "Respite II": 10*k, "Respite III": 10*k, //we've accounted for stacking
+            "True Protection I": 500*k, "Fortune IV": 300*k, "Harvesting VI": 200*k,
+            "Replenish I": 1*m, "Blessing VI": 1*m, "Caster VI": 400*k, "Looting IV": 50*k,
+            "Luck of the Sea VI": 50*k, "One For All": 4*m, "Giant Killer VI": 100*k};
+        this.enchantValueTable = {  //honestly a lot of the super-tier enchantments are not worth much for flipping
+            "Dragon Hunter": 200*k, "Overload": 700*k, "Ferocious Mana": 200*k, "Hardened Mana": 50*k, 
+            "Mana Vampire": 250*k, "Smarty Pants": 400*k, "Sugar Rush": 100*k, "Pristine": 1*m, 
+            "Turbo-Wheat": 30*k, "Turbo-Carrot": 50*k,  "Turbo-Potato": 100*k,  "Turbo-Cacti": 100*k,
+            "Turbo-Pumpkin": 100*k, "Turbo-Melon": 50*k, "Turbo-Mushrooms": 50*k, "Turbo-Cocoa": 50*k,
+            "Turbo-Warts": 30*k, "Charm": 100*k, "Corruption": 30*k, "Chimera": 100*m, "Combo": 30*k,
+            "Duplex": 13*m, "Fatal Tempo": 150*m, "Flash": 2*m, "Inferno": 45*m, "Last Stand": 100*k,
+            "Legion": 1*m, "Rend": 200*k, "Soul Eater": 1*m, "Swarm": 500*k, "Ultimate Wise": 100*k,
+            "Wisdom": 125*k
+        }
         this.loreValueTable = Object.assign({}, this.loreValueTable, this.petLoreValueTable);
         this.nameValueTable = {"Withered": 2.1*m, "Ancient": 600*k, "Necrotic": 300*k};
-
         //not really sure if these have a purpose but they're here just in case
         this.loreOverrideTable = {}; //{"Growth VI": 0, "Protection VI":0};
         this.nameOverrideTable = {};

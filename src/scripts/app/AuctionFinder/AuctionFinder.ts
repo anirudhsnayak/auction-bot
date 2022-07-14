@@ -21,7 +21,9 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
     - Sort using one name for a set of enchanted books (instead of listing all of them)
     - ALL weapons should be checked separately for 5 stars
     - Remove things that are in bazaar from check list
+    - Deal with efficiency levels
     - Account for weapon/armor kills
+        - Account for compact/cultivating/expertise enchant amt broken
     - Account for upgraded armor (like with scarf frags)
     - Add MORE items to the flip list
     - Stacked Items
@@ -140,7 +142,7 @@ export default class AuctionFinder {
         let lowestRawCost = this.rawCostLeastBin(auctionSort);  
         for(let i = 0; i < auctionSort.length; i++){ 
             let currentAuction = auctionSort[i];
-            let optimalFlipPriceIndex = i;
+            let optimalFlipPriceIndex = i; 
             // if(currentBudget > AuctionFinderConfig.budget){
             //     break; //clearly everything after this exceeds our budget
             // }
@@ -155,7 +157,7 @@ export default class AuctionFinder {
             } else {
                 continue;
             }
-            let manufactureCost = lowestRawCost + currentAuction.auctionBaseValue; //using the lowest from last time
+            let priceCeiling = lowestRawCost + currentAuction.auctionBaseValue; //using the lowest from last time
             if(currentAuction.auctionData.bin){ //bins are used as reference
                 lowestRawCost = Math.min(lowestRawCost, currentAuction.auctionCost - currentAuction.auctionBaseValue);
             }
@@ -164,11 +166,13 @@ export default class AuctionFinder {
                 if(!auctionSort[j].auctionData.bin){
                     continue; //skip non-bin auctions
                 }
-                if(auctionSort[j].auctionCost > manufactureCost){ 
-                    //auctions can't be higher than the amt needed to make it in the first place
+                if(auctionSort[j].auctionCost > priceCeiling){ 
+                    //auctions can't be higher than the price ceiling
                     break; //clearly everything after this is more expensive 
                 }
                 if(currentAuction.auctionBaseValue > auctionSort[j].auctionBaseValue){
+                    let baseValueDifference = currentAuction.auctionBaseValue - auctionSort[j].auctionBaseValue;
+                    priceCeiling = Math.min(priceCeiling, auctionSort[j].auctionCost + baseValueDifference);
                     optimalFlipPriceIndex = j;
                 } else {
                     break; //unlikely that this auction is better than the one which is valued higher
@@ -181,7 +185,7 @@ export default class AuctionFinder {
             let min_profit_ = 0.98*auctionSort[optimalFlipPriceIndex].auctionCost - currentAuction.auctionCost;
             let max_profit_ = 0.98*auctionSort[optimalFlipPriceIndex+1].auctionCost - currentAuction.auctionCost;
             //we can't make more than the raw price to make the item
-            max_profit_ = Math.min(manufactureCost-currentAuction.auctionCost, max_profit_); 
+            max_profit_ = Math.min(priceCeiling-currentAuction.auctionCost, max_profit_); 
             // if(max_profit_ < AuctionFinderConfig.profitCriteria){continue;} //we don't fit the criteria
             this.flips.push({
                 auction: currentAuction,

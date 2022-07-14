@@ -8,7 +8,7 @@ export default class AuctionEstimatedValue{
     }
     static getUpgradableBaseValue(auctionData, auctionType){
         return AuctionEstimatedValue.getLoreValue(auctionData) + 
-        AuctionEstimatedValue.getNameValue(auctionData);
+        AuctionEstimatedValue.getNameValue(auctionData) + AuctionEstimatedValue.getEnchantmentValue(auctionData);
     }
     static getTalismanBaseValue(auctionData, auctionType){
         return AuctionEstimatedValue.getLoreValue(auctionData);
@@ -29,6 +29,39 @@ export default class AuctionEstimatedValue{
         }
         return loreValue;
     }
+    static getEnchantmentValue(auctionData){
+        let enchantValue = 0;
+        for(let key in AuctionFinderConfig.enchantValueTable){
+            if(auctionData.item_lore.includes(key)){
+                enchantValue += this.getEnchantValue(auctionData.item_lore, key, AuctionFinderConfig.enchantValueTable[key]);
+            }
+        }
+        return enchantValue;
+    }
+    static getEnchantValue(auctionLore, enchant, baseEnchantValue){
+        let enchantPosition = auctionLore.indexOf(enchant);
+        if(enchantPosition == -1){return 0;}
+        let romanNumeral = auctionLore.substring(enchantPosition+enchant.length+1, auctionLore.indexOf("§", enchantPosition+enchant.length+1));
+        return baseEnchantValue*Math.pow(2, AuctionEstimatedValue.getRomanNumeralValue(romanNumeral)-1);
+    }
+    static getRomanNumeralValue(romanNumeral){
+        //returns roman numeral values between 0 and 10
+        //too lazy to implement this properly
+        switch(romanNumeral){
+            case "I":    return 1;
+            case "II":   return 2;
+            case "III":  return 3;
+            case "IV":   return 4;
+            case "V":    return 5;
+            case "VI":   return 6;
+            case "VII":  return 7;
+            case "VIII": return 8;
+            case "IX":   return 9;
+            case "X":    return 10;
+            default:     return 0;
+        }
+    }
+
     static getNameValue(auctionData){
         let nameValue = 0;
         for(let key in AuctionFinderConfig.nameValueTable){

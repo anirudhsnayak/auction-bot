@@ -2,12 +2,18 @@
 import AuctionFinder from "../../../scripts/app/AuctionFinder/AuctionFinder";
 import AuctionFinderConfig from "../../../scripts/app/config/AuctionFinderConfig";
 import AuctionDisplayManager from "../../../scripts/app/render/AuctionDisplayManager";
-let flips = [];//[{auction: {auctionData: {bin: true, item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
+import AuctionConfig from "../../app/AuctionConfig.svelte";
+let flips = []; //[{auction: {auctionData: {bin: true, item_name: "Aspect of the End", uuid: "lol"}}, min_profit: 5, max_profit: 100000}];
 function callback(){
     flips = AuctionFinder.queriedFlips.slice(0, AuctionFinderConfig.maxAuctionDisplayCount);
 }
 function copyAuction(i){
     navigator.clipboard.writeText("/viewauction " + flips[i].auction.auctionData.uuid);
+}
+function blacklistAuction(i){
+    AuctionFinder.blacklistUUID(flips[i].auction.auctionData.uuid);
+    flips.splice(i, 1); 
+    flips = flips; //force update
 }
 AuctionDisplayManager.registerAuctionRenderCallback(callback);
 </script>
@@ -19,6 +25,11 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
 {#each flips as flip, i}
     <div class="auctions">
         <div class="auctionBox">
+            <div class="delete">
+                <button class = "deleteButton" on:click="{()=>{blacklistAuction(i)}}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20"  height="20" style="fill:white;" viewBox="0 0 24 24"><path d="M24 20.188l-8.315-8.209 8.2-8.282-3.697-3.697-8.212 8.318-8.31-8.203-3.666 3.666 8.321 8.24-8.206 8.313 3.666 3.666 8.237-8.318 8.285 8.203z"/></svg>
+                </button>
+            </div>
             <div class="itemData">
                 <div class="name">
                     {flip.auction.auctionData.item_name}
@@ -53,6 +64,28 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
         font-size: 2rem;
         text-align: center;
     }
+    .delete{
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        border: none;
+        margin: 0;
+    }
+    .deleteButton{
+        height: 90%;
+        width: 75%;
+        border: none;
+        background: rgb(247, 45, 86);
+        margin: 0;
+    }
+    .deleteButton:hover{
+        background: rgb(215, 43, 77);
+        cursor: pointer;
+    }
+    .deleteButton:active{
+        background: rgb(192, 12, 48);
+    }
     .name{
         display: flex;
         flex-direction: row;
@@ -72,21 +105,21 @@ AuctionDisplayManager.registerAuctionRenderCallback(callback);
         margin-right: 1rem;
     }
     .auctionBox{
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        margin-left: 2rem;
+        display: grid;
+        grid-template-columns: 3.5rem max-content auto minmax(5rem, 20rem);
+        grid-template-areas: "delete itemdata empty copy";
+        margin-left: 0.5rem;
         margin-right: 2rem;
     }
     .itemData{
+        grid-area: itemdata;
         margin-top: 0.25rem;
         margin-bottom: 0.5rem;
     }
     .copy{
+        grid-area: copy;
         margin-left: 2rem;
         margin-top: 0.5rem;
-        max-width: 20rem;
-        flex: 1 1 auto;
         background-color: rgb(100, 181, 100);
         color: white;
         border-radius: 0.5rem;

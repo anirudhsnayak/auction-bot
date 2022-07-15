@@ -8,7 +8,9 @@ import AuctionFinderConfig from "../config/AuctionFinderConfig";
 
     Potential improvements: (not just in this class)
     - MAKE ANOTHER WATCHLIST FOR SKINS!!!!!!
+    - ADD AN OPTION TO REMOVE FAKE FLIPS FROM THE DISPLAY LIST MANUALLY, (so that the list is less cluttered and less pointless)
     - DON'T RECALCULATE FLIPS FOR EACH QUERY. Cache the flip list, and then sort results based on query.
+    - Add another identifier to the flip list (that identifies if the flip is the lowest bin)
     - Issue of deadlock, one flip references another
         - Add a buyout system to fix deadlock
     - Make the tax calculation actually accurate
@@ -37,6 +39,10 @@ export default class AuctionFinder {
     static flips = [];
     static queriedFlips = [];
     static bestAuctions = [];
+    static blacklistedUUIDs = [];
+    static blacklistUUID(uuid){
+        this.blacklistedUUIDs.push(uuid);
+    }
     static findAuctions(callback) {
         AuctionQuery.updateAuctions().then(combinedAuctions => {
             this.findAuctionsImpl(AuctionSeparator.separateAuctions(combinedAuctions));
@@ -56,7 +62,7 @@ export default class AuctionFinder {
         //copy flips
         this.queriedFlips = [];
         for(let flip of this.flips){
-           if(this.checkFlipMatchesQuery(flip)){
+           if(this.checkFlipMatchesQuery(flip) && !this.blacklistedUUIDs.includes(flip.auction.auctionData.uuid)){
                this.queriedFlips.push(flip);
            }
         }
